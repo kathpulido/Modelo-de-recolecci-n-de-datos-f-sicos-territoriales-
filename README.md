@@ -12,6 +12,10 @@ Código y documentación técnica de la tesis sobre **recolección participativa
 | Diagramas | Modelos ER, físico y de diseño del sistema (draw.io) | `public/*.drawio` |
 | Documentación | Diccionario de datos, brechas LADM, cómo ejecutar | `DICCIONARIO_BD.md`, `BRECHAS_LADM.md`, `COMO_EJECUTAR.md` |
 
+## Guía de uso
+
+Manual completo, con imágenes, del chatbot y del visor: **[docs/GUIA_DE_USO.md](docs/GUIA_DE_USO.md)**.
+
 ## Cómo ejecutarlo
 
 1. Copia `.env.example` a `.env` y completa tus propios valores.
