@@ -16,7 +16,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname  = path.dirname(__filename)
 
 const PORT       = Number(process.env.GEOVISOR_PORT)    || 3009
-const JWT_SECRET = process.env.GEOVISOR_JWT_SECRET      || 'catastro-etnico-secret'
+const JWT_SECRET = process.env.GEOVISOR_JWT_SECRET as string
+if (!JWT_SECRET) {
+    throw new Error('Falta GEOVISOR_JWT_SECRET en el .env (usa una cadena larga y aleatoria).')
+}
 const BOT_URL    = `http://localhost:${process.env.PORT || 3008}`
 
 /*  De dónde leer los territorios.
