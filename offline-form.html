@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#1a5c38"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="/manifest.json"/>
+<title>Registro Territorial Comunitario</title>
+<style>
+:root{--v:#1a5c38;--vm:#2d7a4f;--vc:#4caf50;--vb:#f0f7f2;--tx:#1a1a1a;--gr:#6b7280;--br:#d1e8d9;--sh:0 2px 12px rgba(0,0,0,.10);--ra:12px;--ro:#dc2626;--az:#2563eb}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--vb);color:var(--tx);min-height:100vh;padding-bottom:90px}
+header{background:var(--v);color:#fff;padding:13px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1{font-size:.98rem;font-weight:700}
+header p{font-size:.73rem;opacity:.85;margin-top:1px}
+#audio-bar{background:#fff;border-bottom:1px solid var(--br);padding:7px 13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#audio-bar span{font-size:.75rem;color:var(--gr);flex:1}
+.tb{display:flex;align-items:center;gap:4px;padding:6px 11px;border-radius:99px;border:none;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+#tts-btn{background:var(--vb);color:var(--v);border:1.5px solid var(--v)}
+#tts-btn.on{background:var(--v);color:#fff}
+#tts-stop{background:#fef3c7;color:#92400e;border:1.5px solid #fde68a;display:none}
+#tts-vel{background:#f3f4f6;color:var(--gr);border:1.5px solid var(--br)}
+#sb{display:flex;align-items:center;gap:9px;padding:8px 13px;font-size:.79rem;font-weight:600;transition:background .4s}
+#sb.on{background:#d1fae5;color:#065f46}#sb.off{background:#fef3c7;color:#92400e}
+#sd{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.on #sd{background:#10b981}.off #sd{background:#f59e0b;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#pw{background:#fff;border-bottom:1px solid var(--br);padding:8px 16px;display:none}
+#pl{display:flex;justify-content:space-between;font-size:.75rem;color:var(--gr);margin-bottom:5px}
+#pb{height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden}
+#pf{height:100%;background:var(--vc);border-radius:99px;transition:width .4s ease;width:0%}
+.mod{margin:13px;background:#fff;border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden;display:none}
+.mod.act{display:block}
+.mh{background:var(--v);color:#fff;padding:12px 15px;display:flex;align-items:center;gap:9px}
+.mh .ic{font-size:1.25rem}.mh h2{font-size:.9rem;font-weight:700}.mh p{font-size:.72rem;opacity:.85;margin-top:2px}
+.mb{padding:15px}
+.f{margin-bottom:16px}
+.fh{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px}
+.f label{font-size:.83rem;font-weight:600;color:var(--v);line-height:1.4;flex:1}
+.bleer{flex-shrink:0;width:30px;height:30px;border-radius:50%;border:none;background:var(--vb);color:var(--v);font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:-1px}
+.bleer:hover{background:var(--v);color:#fff}
+.bleer.ley{background:var(--v);color:#fff;animation:wave .6s infinite alternate}
+@keyframes wave{from{transform:scale(1)}to{transform:scale(1.15)}}
+.ay{font-size:.73rem;color:var(--gr);margin-bottom:6px;line-height:1.4}
+.f input[type=text],.f input[type=number],.f textarea,.f select{width:100%;padding:9px 12px;border:1.5px solid var(--br);border-radius:8px;font-size:.89rem;background:#fff;color:var(--tx);transition:border-color .2s,box-shadow .2s;font-family:inherit;-webkit-appearance:none}
+.f input:focus,.f textarea:focus,.f select:focus{outline:none;border-color:var(--vm);box-shadow:0 0 0 3px rgba(45,122,79,.15)}
+.f textarea{min-height:80px;resize:vertical}
+.f select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+.f.err input,.f.err select,.f.err textarea{border-color:var(--ro);box-shadow:0 0 0 3px rgba(220,38,38,.12)}
+.me{display:none;font-size:.72rem;color:var(--ro);margin-top:4px;font-weight:600}
+.f.err .me{display:block}
+.ops{display:flex;flex-wrap:wrap;gap:6px}
+.ops label{display:flex;align-items:center;gap:4px;padding:6px 12px;border:1.5px solid var(--br);border-radius:99px;font-size:.79rem;cursor:pointer;transition:all .2s;user-select:none;font-weight:600;color:var(--gr);background:#fff}
+.ops input[type=radio]{display:none}
+.ops label.sel{background:var(--v);border-color:var(--v);color:#fff}
+.grab{margin-top:9px;background:var(--vb);border:1.5px solid var(--br);border-radius:9px;padding:11px}
+.grab-t{font-size:.74rem;font-weight:700;color:var(--v);margin-bottom:9px;display:flex;align-items:center;gap:4px}
+.grab-c{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.gbtn{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:99px;border:none;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.gbtn.ini{background:var(--ro);color:#fff}.gbtn.det{background:#1f2937;color:#fff}
+.gbtn:disabled{opacity:.4;cursor:not-allowed}
+.rind{display:none;align-items:center;gap:5px;font-size:.74rem;font-weight:700;color:var(--ro)}
+.rind.act{display:flex}
+.rd{width:7px;height:7px;border-radius:50%;background:var(--ro);animation:pulse 1s infinite}
+.ag{margin-top:7px;background:#fff;border:1px solid var(--br);border-radius:7px;padding:9px;display:none}
+.ag.vis{display:block}
+.ag-t{font-size:.72rem;color:var(--gr);margin-bottom:5px;font-weight:600}
+.ag audio{width:100%;height:34px}
+.ab{display:block;margin-top:5px;width:100%;padding:6px;background:#fee2e2;color:var(--ro);border:none;border-radius:6px;font-size:.74rem;font-weight:700;cursor:pointer;font-family:inherit}
+.nav{display:flex;gap:8px;padding:11px 15px;border-top:1px solid var(--br);background:#fafafa}
+.btn{flex:1;padding:10px;border:none;border-radius:8px;font-size:.87rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit}
+.bant{background:#fff;color:var(--v);border:2px solid var(--br)}.bsig{background:var(--v);color:#fff}
+.bant:active{background:var(--vb)}.bsig:active{background:var(--vm)}
+#res .rg{margin-bottom:13px;border:1px solid var(--br);border-radius:8px;overflow:hidden}
+#res .rt{background:var(--vb);padding:8px 12px;font-weight:700;font-size:.79rem;color:var(--v);border-bottom:1px solid var(--br)}
+#res .ri{padding:8px 12px}
+#res .rf{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:4px 0;font-size:.79rem;border-bottom:1px dotted var(--br)}
+#res .rf:last-child{border:none}
+#res .rk{color:var(--gr);flex-shrink:0}
+#res .rv{font-weight:600;text-align:right}
+.ab2{display:inline-flex;align-items:center;gap:3px;background:#d1fae5;color:#065f46;border-radius:99px;padding:2px 7px;font-size:.7rem;font-weight:700}
+#ee{margin:13px;padding:18px;border-radius:var(--ra);text-align:center;display:none}
+#ee.pend{background:#fef3c7;border:1px solid #fde68a}
+#ee.env{background:#eff6ff;border:1px solid #bfdbfe}
+#ee.ok{background:#d1fae5;border:1px solid #6ee7b7}
+#ee.err{background:#fee2e2;border:1px solid #fca5a5}
+#ee .ei{font-size:2.1rem;margin-bottom:8px}
+#ee h3{font-size:.96rem;margin-bottom:5px}
+#ee p{font-size:.79rem;color:var(--gr);line-height:1.5;white-space:pre-line}
+#bret{display:none;margin-top:12px;background:var(--az);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:.87rem;font-weight:700;cursor:pointer;font-family:inherit}
+#bpw{margin-top:11px;height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden;display:none}
+#bpf{height:100%;background:var(--az);border-radius:99px;width:0%;transition:width .3s}
+#toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:8px 16px;border-radius:99px;font-size:.78rem;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;z-index:9999}
+#toast.show{opacity:1}
+#pi{margin:15px;background:#fff;border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden}
+.pib{background:linear-gradient(135deg,var(--v) 0%,var(--vm) 100%);color:#fff;padding:24px 16px;text-align:center}
+.pib .e{font-size:2.6rem;margin-bottom:8px}.pib h2{font-size:1.1rem;font-weight:800}.pib p{font-size:.79rem;opacity:.9;margin-top:4px;line-height:1.5}
+.pix{padding:16px}
+.pin{background:var(--vb);border-radius:8px;padding:12px;margin-bottom:13px;font-size:.79rem;line-height:1.6;color:#2d4a38}
+.pin strong{color:var(--v)}
+#bini{width:100%;padding:12px;background:var(--v);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:800;cursor:pointer;font-family:inherit}
+#bcont{width:100%;padding:11px;margin-top:8px;background:#fff;color:var(--v);border:2px solid var(--v);border-radius:8px;font-size:.89rem;font-weight:700;cursor:pointer;font-family:inherit;display:none}
+footer{position:fixed;bottom:0;left:0;right:0;background:#f5efe6;border-top:1px solid var(--br);padding:7px 14px;display:flex;align-items:center;justify-content:space-between;font-size:.69rem;color:var(--gr)}
+@media(min-width:600px){.mod,#pi,#ee{max-width:560px;margin-left:auto;margin-right:auto}#sb,#pw,#audio-bar,footer{max-width:560px;margin:0 auto}}
+</style>
+</head>
+<body>
+<header><h1>🌿 Registro Territorial Comunitario</h1><p>Catastro Étnico · Con audio y grabación de voz</p></header>
+
+<div id="audio-bar">
+  <span>🔊 Asistente de voz</span>
+  <button class="tb" id="tts-btn" onclick="toggleTTS()">🔊 Activar lectura</button>
+  <button class="tb" id="tts-stop" onclick="stopTTS()">⏹ Detener</button>
+  <button class="tb" id="tts-vel" onclick="cambiarVel()">🐢 Lento</button>
+</div>
+
+<div id="sb" class="off"><div id="sd"></div><span id="st">Verificando conexión...</span></div>
+<div id="pw"><div id="pl"><span id="pm">Módulo 1 de 9</span><span id="pp">0%</span></div><div id="pb"><div id="pf"></div></div></div>
+<div id="toast"></div>
+
+<!-- INICIO -->
+<div id="pi">
+  <div class="pib"><div class="e">🌿</div><h2>Bienvenido(a)</h2><p>Registro territorial · Funciona sin internet · Con audio y grabación de voz</p></div>
+  <div class="pix">
+    <div class="pin">
+      <strong>🎙️ Funciones de audio:</strong><br><br>
+      • Toque <strong>🔊</strong> junto a cada pregunta para escucharla en voz alta<br>
+      • Use <strong>🎤 Grabar</strong> para responder en audio en preguntas de texto libre<br>
+      • Todo se guarda en el dispositivo y se envía al conectarse<br><br>
+      <strong>📶 Sin internet:</strong> abra una vez con conexión, úselo siempre sin ella.
+    </div>
+    <button id="bini">✨ Iniciar nuevo registro</button>
+    <button id="bcont">📂 Continuar registro guardado</button>
+  </div>
+</div>
+
+<!-- MÓDULO 1 -->
+<section class="mod" id="mod-1">
+  <div class="mh"><span class="ic">🏡</span><div><h2>Módulo 1 de 9: Identidad de la comunidad</h2><p>Información básica de identificación</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-nombre_comunidad">
+      <div class="fh"><label>¿Cuál es el nombre de su comunidad?</label><button class="bleer" onclick="say(this,'¿Cuál es el nombre de su comunidad? Escriba el nombre completo.')">🔊</button></div>
+      <div class="ay">Nombre completo tal como aparece en documentos oficiales.</div>
+      <input type="text" id="nombre_comunidad" placeholder="Ej: Comunidad Indígena Zenú del Alto San Jorge"/>
+      <div class="me">Este campo es obligatorio.</div>
+    </div>
+    <div class="f" id="c-tipo_comunidad">
+      <div class="fh"><label>¿Qué tipo de comunidad son?</label><button class="bleer" onclick="say(this,'¿Qué tipo de comunidad son? Seleccione la opción que mejor los describe.')">🔊</button></div>
+      <select id="tipo_comunidad">
+        <option value="">— Seleccione —</option>
+        <option value="Comunidad_Negra">Comunidad negra (consejo comunitario)</option>
+        <option value="Cabildo">Cabildo indígena</option>
+        <option value="Parcialidad">Parcialidad</option>
+        <option value="Resguardo_Indigena">Resguardo indígena</option>
+        <option value="Territorio_Colectivo">Territorio colectivo</option>
+      </select>
+      <div class="me">Seleccione el tipo de comunidad.</div>
+    </div>
+    <div class="f" id="c-pueblo_indigena">
+      <div class="fh"><label>¿A qué pueblo indígena o grupo étnico pertenece?</label><button class="bleer" onclick="say(this,'¿A qué pueblo indígena o grupo étnico pertenece su comunidad?')">🔊</button></div>
+      <input type="text" id="pueblo_indigena" placeholder="Ej: Emberá Chamí"/>
+      <div class="me">Este campo es obligatorio.</div>
+    </div>
+    <div class="f" id="c-tipo_organizacion_filial">
+      <div class="fh"><label>¿Cómo se organizan como comunidad?</label><button class="bleer" onclick="say(this,'¿Cómo se organizan como comunidad?')">🔊</button></div>
+      <div class="ops" id="op-org">
+        <label><input type="radio" name="org" value="Cabildo"/><span>Cabildo</span></label>
+        <label><input type="radio" name="org" value="Autoridades_Tradicionales"/><span>Autoridades tradicionales</span></label>
+        <label><input type="radio" name="org" value="Asamblea_Comunitaria"/><span>Asamblea comunitaria</span></label>
+        <label><input type="radio" name="org" value="Consejo_Comunitario"/><span>Consejo comunitario</span></label>
+        <label><input type="radio" name="org" value="Otro"/><span>Otro</span></label>
+      </div>
+      <input type="hidden" id="tipo_organizacion_filial"/>
+      <div class="me">Seleccione el tipo de organización.</div>
+    </div>
+    <div class="f" id="c-familias_aprox">
+      <div class="fh"><label>¿Cuántas familias viven en el territorio? (aprox.)</label><button class="bleer" onclick="say(this,'¿Cuántas familias viven aproximadamente en el territorio? Escriba solo el número.')">🔊</button></div>
+      <input type="number" id="familias_aprox" placeholder="Ej: 45" min="0"/>
+      <div class="me">Ingrese un número válido.</div>
+    </div>
+    <div class="f" id="c-personas_aprox">
+      <div class="fh"><label>¿Cuántas personas viven en el territorio? (aprox.)</label><button class="bleer" onclick="say(this,'¿Cuántas personas viven aproximadamente en el territorio?')">🔊</button></div>
+      <input type="number" id="personas_aprox" placeholder="Ej: 320" min="0"/>
+      <div class="me">Ingrese un número válido.</div>
+    </div>
+    <div class="f" id="c-numero_mujeres">
+      <div class="fh"><label>¿Cuántas son mujeres?</label><button class="bleer" onclick="say(this,'¿Cuántas personas son mujeres?')">🔊</button></div>
+      <input type="number" id="numero_mujeres" placeholder="Ej: 160" min="0"/>
+      <div class="me">Ingrese un número válido.</div>
+    </div>
+    <div class="f" id="c-numero_hombres">
+      <div class="fh"><label>¿Cuántos son hombres?</label><button class="bleer" onclick="say(this,'¿Cuántos son hombres?')">🔊</button></div>
+      <input type="number" id="numero_hombres" placeholder="Ej: 160" min="0"/>
+      <div class="me">Ingrese un número válido.</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bsig" onclick="irA(2)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 2 -->
+<section class="mod" id="mod-2">
+  <div class="mh"><span class="ic">👤</span><div><h2>Módulo 2 de 9: Representante legal</h2><p>Autoridades de la comunidad</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-autoridades">
+      <div class="fh"><label>Nombre completo del representante legal o autoridad principal</label><button class="bleer" onclick="say(this,'¿Cuál es el nombre completo del representante legal o autoridad principal?')">🔊</button></div>
+      <input type="text" id="autoridades" placeholder="Nombre completo"/>
+      <div class="me">Escriba el nombre del representante.</div>
+    </div>
+    <div class="f" id="c-cargo_autoridad">
+      <div class="fh"><label>¿Qué cargo ocupa?</label><button class="bleer" onclick="say(this,'¿Qué cargo ocupa esta persona dentro de la comunidad?')">🔊</button></div>
+      <select id="cargo_autoridad">
+        <option value="">— Seleccione —</option>
+        <option value="Gobernador">Gobernador(a)</option>
+        <option value="Capitan">Capitán</option>
+        <option value="Cacique">Cacique</option>
+        <option value="Autoridad_Tradicional">Autoridad tradicional</option>
+        <option value="Representante_Legal_CC">Representante legal consejo comunitario</option>
+        <option value="Otro">Otro cargo</option>
+      </select>
+      <div class="me">Seleccione el cargo.</div>
+    </div>
+    <div class="f" id="c-numero_documento_representante">
+      <div class="fh"><label>Número de documento del representante</label><button class="bleer" onclick="say(this,'¿Cuál es el número de documento del representante? Si no aplica, escriba no aplica.')">🔊</button></div>
+      <input type="text" id="numero_documento_representante" placeholder="Ej: 12345678 o no aplica"/>
+      <div class="me">Ingrese el número de documento.</div>
+    </div>
+    <div class="f" id="c-legitimidad">
+      <div class="fh"><label>¿Esta persona fue elegida por la comunidad?</label><button class="bleer" onclick="say(this,'¿Esta persona fue elegida o reconocida por la comunidad?')">🔊</button></div>
+      <div class="ops" id="op-leg">
+        <label><input type="radio" name="leg" value="Sí"/><span>✅ Sí, fue elegida</span></label>
+        <label><input type="radio" name="leg" value="En_Proceso"/><span>⏳ En proceso</span></label>
+      </div>
+      <input type="hidden" id="legitimidad"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(1)">← Anterior</button><button class="btn bsig" onclick="irA(3)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 3 — con grabador de voz -->
+<section class="mod" id="mod-3">
+  <div class="mh"><span class="ic">📖</span><div><h2>Módulo 3 de 9: Historia del territorio</h2><p>Memoria y origen de la comunidad</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-antiguedad_territorio">
+      <div class="fh"><label>¿Desde cuándo habita su comunidad este territorio?</label><button class="bleer" onclick="say(this,'¿Desde cuándo habita su comunidad este territorio?')">🔊</button></div>
+      <div class="ops" id="op-ant">
+        <label><input type="radio" name="ant" value="Desde_Siempre"/><span>🌿 Desde siempre</span></label>
+        <label><input type="radio" name="ant" value="Desde_Hace_Muchos_Anos"/><span>📅 Muchas generaciones</span></label>
+        <label><input type="radio" name="ant" value="Desde_Fecha_Aproximada"/><span>🗓️ Fecha aproximada</span></label>
+        <label><input type="radio" name="ant" value="Desconocida"/><span>❓ Desconocida</span></label>
+      </div>
+      <input type="hidden" id="antiguedad_territorio"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+    <div class="f" id="c-descripcion_historia">
+      <div class="fh"><label>¿Cómo llegaron a este territorio? Cuéntenos la historia.</label><button class="bleer" onclick="say(this,'¿Cómo llegaron a este territorio? Cuéntenos brevemente la historia. Puede escribir o grabar su respuesta en audio.')">🔊</button></div>
+      <div class="ay">Puede escribir o usar el grabador de voz para contar la historia.</div>
+      <textarea id="descripcion_historia" placeholder="Cuéntenos la historia de su comunidad..."></textarea>
+      <div class="me">Escriba o grabe la historia del territorio.</div>
+      <div class="grab" id="gr-descripcion_historia">
+        <div class="grab-t">🎙️ O grabe su respuesta en audio</div>
+        <div class="grab-c">
+          <button class="gbtn ini" id="gi-descripcion_historia" onclick="startRec('descripcion_historia')">🎤 Iniciar</button>
+          <button class="gbtn det" id="gs-descripcion_historia" onclick="stopRec('descripcion_historia')" style="display:none">⏹ Detener</button>
+          <div class="rind" id="ri-descripcion_historia"><div class="rd"></div><span>Grabando</span><span id="rt-descripcion_historia">0:00</span></div>
+        </div>
+        <div class="ag" id="ag-descripcion_historia">
+          <div class="ag-t">🎵 Audio grabado:</div>
+          <audio id="ap-descripcion_historia" controls></audio>
+          <button class="ab" onclick="delRec('descripcion_historia')">🗑️ Borrar grabación</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(2)">← Anterior</button><button class="btn bsig" onclick="irA(4)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 4 -->
+<section class="mod" id="mod-4">
+  <div class="mh"><span class="ic">🌍</span><div><h2>Módulo 4 de 9: Territorio y ubicación</h2><p>Datos geográficos del territorio</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-nombre_territorio">
+      <div class="fh"><label>Nombre oficial del territorio o resguardo</label><button class="bleer" onclick="say(this,'¿Cuál es el nombre oficial del territorio o resguardo?')">🔊</button></div>
+      <input type="text" id="nombre_territorio" placeholder="Nombre completo del territorio"/>
+      <div class="me">Ingrese el nombre del territorio.</div>
+    </div>
+    <div class="f" id="c-nombre_predio">
+      <div class="fh"><label>Nombre del predio según documentos</label><button class="bleer" onclick="say(this,'¿Cuál es el nombre del predio según documentos? Si no tiene nombre escriba sin nombre.')">🔊</button></div>
+      <input type="text" id="nombre_predio" placeholder="Nombre del predio o 'sin nombre'"/>
+      <div class="me">Ingrese el nombre del predio.</div>
+    </div>
+    <div class="f" id="c-area_acto_administrativo">
+      <div class="fh"><label>Área aproximada del territorio (hectáreas)</label><button class="bleer" onclick="say(this,'¿Cuál es el área aproximada del territorio en hectáreas? Si no lo sabe escriba desconocida.')">🔊</button></div>
+      <input type="text" id="area_acto_administrativo" placeholder="Ej: 1250 o desconocida"/>
+      <div class="me">Ingrese el área o "desconocida".</div>
+    </div>
+    <div class="f" id="c-tipo_procedimiento">
+      <div class="fh"><label>Tipo de procedimiento de reconocimiento</label><button class="bleer" onclick="say(this,'¿Cuál fue el tipo de procedimiento de reconocimiento del territorio?')">🔊</button></div>
+      <select id="tipo_procedimiento">
+        <option value="">— Seleccione —</option>
+        <option value="Ampliacion_ResguardosIndigenas">Ampliación de resguardo indígena</option>
+        <option value="Ampliacion_Saneamiento_ResguardosIndigenas">Ampliación y saneamiento</option>
+        <option value="Reestructuracion_ResguardosIndigenas">Reestructuración de resguardo</option>
+        <option value="Conversion_Reservas_Resguardos">Conversión de reserva en resguardo</option>
+        <option value="Titulacion_Comunidades_Negras">Titulación comunidades negras</option>
+        <option value="En_Proceso">En proceso / no reconocido</option>
+      </select>
+      <div class="me">Seleccione el tipo de procedimiento.</div>
+    </div>
+    <div class="f" id="c-departamento">
+      <div class="fh"><label>Departamento</label><button class="bleer" onclick="say(this,'¿En qué departamento se encuentra el territorio?')">🔊</button></div>
+      <input type="text" id="departamento" placeholder="Ej: Chocó"/>
+      <div class="me">Ingrese el departamento.</div>
+    </div>
+    <div class="f" id="c-municipio">
+      <div class="fh"><label>Municipio</label><button class="bleer" onclick="say(this,'¿En qué municipio se encuentra el territorio?')">🔊</button></div>
+      <input type="text" id="municipio" placeholder="Ej: Quibdó"/>
+      <div class="me">Ingrese el municipio.</div>
+    </div>
+    <div class="f" id="c-vereda">
+      <div class="fh"><label>Vereda o corregimiento</label><button class="bleer" onclick="say(this,'¿En qué vereda o corregimiento está el territorio?')">🔊</button></div>
+      <input type="text" id="vereda" placeholder="Nombre de la vereda o corregimiento"/>
+      <div class="me">Ingrese la vereda o corregimiento.</div>
+    </div>
+    <div class="f" id="c-limites_territorio">
+      <div class="fh"><label>¿Cómo describe los límites del territorio?</label><button class="bleer" onclick="say(this,'¿Cómo describe su comunidad los límites del territorio?')">🔊</button></div>
+      <select id="limites_territorio">
+        <option value="">— Seleccione —</option>
+        <option value="Rios">Ríos y quebradas</option>
+        <option value="Montanas">Montañas y cerros</option>
+        <option value="Caminos">Caminos y senderos</option>
+        <option value="Hitos_Naturales">Hitos naturales</option>
+        <option value="Documentos_Oficiales">Documentos oficiales</option>
+        <option value="Combinacion">Combinación</option>
+      </select>
+      <div class="me">Seleccione el tipo de límites.</div>
+    </div>
+    <div class="f" id="c-reconocimiento_estado">
+      <div class="fh"><label>¿El territorio ha sido reconocido por el Estado?</label><button class="bleer" onclick="say(this,'¿El territorio ha sido reconocido oficialmente por el Estado colombiano?')">🔊</button></div>
+      <div class="ops" id="op-rec">
+        <label><input type="radio" name="rec" value="Sí"/><span>✅ Sí</span></label>
+        <label><input type="radio" name="rec" value="No"/><span>❌ No</span></label>
+        <label><input type="radio" name="rec" value="No_Sabemos"/><span>❓ No sabemos</span></label>
+      </div>
+      <input type="hidden" id="reconocimiento_estado"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+    <div class="f" id="c-zonas_especiales">
+      <div class="fh"><label>¿Existen zonas especiales en el territorio?</label><button class="bleer" onclick="say(this,'¿Existen zonas especiales dentro del territorio, como lugares sagrados o de conservación?')">🔊</button></div>
+      <div class="ops" id="op-zon">
+        <label><input type="radio" name="zon" value="Sí"/><span>✅ Sí</span></label>
+        <label><input type="radio" name="zon" value="No"/><span>❌ No</span></label>
+      </div>
+      <input type="hidden" id="zonas_especiales"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+    <div class="f" id="c-gps">
+      <div class="fh"><label>Coordenadas GPS (opcional)</label><button class="bleer" onclick="say(this,'Puede capturar las coordenadas GPS de su ubicación actual tocando el botón.')">🔊</button></div>
+      <button type="button" onclick="captureGPS()" style="width:100%;padding:9px;background:var(--vb);border:1.5px dashed var(--v);border-radius:8px;color:var(--v);font-weight:700;font-size:.85rem;cursor:pointer">📍 Capturar ubicación GPS</button>
+      <div id="gr" style="margin-top:6px;font-size:.77rem;color:var(--v);display:none"></div>
+      <input type="hidden" id="latitud"/><input type="hidden" id="longitud"/>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(3)">← Anterior</button><button class="btn bsig" onclick="irA(5)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 5 -->
+<section class="mod" id="mod-5">
+  <div class="mh"><span class="ic">⚖️</span><div><h2>Módulo 5 de 9: Derechos y restricciones</h2><p>Estado legal del territorio</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-tipo_derecho">
+      <div class="fh"><label>¿Qué tipo de derecho tiene la comunidad sobre el territorio?</label><button class="bleer" onclick="say(this,'¿Qué tipo de derecho tiene la comunidad sobre el territorio?')">🔊</button></div>
+      <select id="tipo_derecho">
+        <option value="">— Seleccione —</option>
+        <option value="Propiedad_Colectiva">Propiedad colectiva reconocida</option>
+        <option value="Posesion_Ancestral">Posesión ancestral sin título</option>
+        <option value="Uso_Usufructo">Uso y usufructo</option>
+        <option value="En_Proceso">En proceso de legalización</option>
+        <option value="Desconocido">Desconocemos</option>
+      </select>
+      <div class="me">Seleccione el tipo de derecho.</div>
+    </div>
+    <div class="f" id="c-restriccion_territorio">
+      <div class="fh"><label>¿Existen restricciones en el territorio?</label><button class="bleer" onclick="say(this,'¿Existen restricciones o servidumbres sobre el territorio?')">🔊</button></div>
+      <select id="restriccion_territorio">
+        <option value="">— Seleccione —</option>
+        <option value="Minera">Actividad minera</option>
+        <option value="Oleoducto_Gasoducto">Oleoducto o gasoducto</option>
+        <option value="Energia_Electrica">Línea eléctrica</option>
+        <option value="Acueducto_Alcantarillado">Acueducto o alcantarillado</option>
+        <option value="Legal_Hidrocarburos">Restricción por hidrocarburos</option>
+        <option value="Ninguna">No hay restricciones</option>
+      </select>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(4)">← Anterior</button><button class="btn bsig" onclick="irA(6)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 6 -->
+<section class="mod" id="mod-6">
+  <div class="mh"><span class="ic">🌱</span><div><h2>Módulo 6 de 9: Uso del territorio</h2><p>Cómo habita y cuida el territorio</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-uso_territorio">
+      <div class="fh"><label>¿Cuál es el uso principal del territorio?</label><button class="bleer" onclick="say(this,'¿Cuál es el uso principal que le da la comunidad al territorio?')">🔊</button></div>
+      <div class="ops" id="op-uso">
+        <label><input type="radio" name="uso" value="Uso_Colectivo"/><span>🤝 Colectivo</span></label>
+        <label><input type="radio" name="uso" value="Uso_Tradicional"/><span>🌿 Tradicional</span></label>
+        <label><input type="radio" name="uso" value="Zonas_Compartidas"/><span>🔗 Zonas compartidas</span></label>
+        <label><input type="radio" name="uso" value="Uso_Mixto"/><span>🏘️ Mixto</span></label>
+      </div>
+      <input type="hidden" id="uso_territorio"/>
+      <div class="me">Seleccione el tipo de uso.</div>
+    </div>
+    <div class="f" id="c-reglas_internas">
+      <div class="fh"><label>¿Existen reglas internas sobre el uso del territorio?</label><button class="bleer" onclick="say(this,'¿Existen reglas o normas internas sobre el uso del territorio?')">🔊</button></div>
+      <div class="ops" id="op-reg">
+        <label><input type="radio" name="reg" value="Sí"/><span>✅ Sí</span></label>
+        <label><input type="radio" name="reg" value="No"/><span>❌ No</span></label>
+      </div>
+      <input type="hidden" id="reglas_internas"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(5)">← Anterior</button><button class="btn bsig" onclick="irA(7)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 7 -->
+<section class="mod" id="mod-7">
+  <div class="mh"><span class="ic">📑</span><div><h2>Módulo 7 de 9: Documentos legales</h2><p>Actos administrativos</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-tipo_acto_administrativo">
+      <div class="fh"><label>¿Existe un documento oficial que reconoce el territorio?</label><button class="bleer" onclick="say(this,'¿Existe algún documento oficial que reconozca el territorio?')">🔊</button></div>
+      <div class="ops" id="op-acto">
+        <label><input type="radio" name="acto" value="Resolucion"/><span>📋 Resolución</span></label>
+        <label><input type="radio" name="acto" value="Acuerdo"/><span>🤝 Acuerdo</span></label>
+        <label><input type="radio" name="acto" value="Folio_Matricula"/><span>🏠 Folio de matrícula</span></label>
+        <label><input type="radio" name="acto" value="Sin_Documento"/><span>❌ Sin documento</span></label>
+      </div>
+      <input type="hidden" id="tipo_acto_administrativo"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+    <div class="f" id="c-numero_acto_administrativo">
+      <div class="fh"><label>Número del acto administrativo</label><button class="bleer" onclick="say(this,'¿Cuál es el número del acto administrativo? Si no lo sabe escriba desconocido.')">🔊</button></div>
+      <input type="text" id="numero_acto_administrativo" placeholder="Ej: 0056 o desconocido"/>
+      <div class="me">Ingrese el número o "desconocido".</div>
+    </div>
+    <div class="f" id="c-fecha_acto_administrativo">
+      <div class="fh"><label>Fecha del acto administrativo</label><button class="bleer" onclick="say(this,'¿Cuál es la fecha del acto administrativo? Use el formato día barra mes barra año.')">🔊</button></div>
+      <div class="ay">Formato dd/mm/aaaa — Ej: 15/03/2005. Si no la sabe escriba "desconocida".</div>
+      <input type="text" id="fecha_acto_administrativo" placeholder="dd/mm/aaaa o desconocida"/>
+      <div class="me">Use formato dd/mm/aaaa o escriba "desconocida".</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(6)">← Anterior</button><button class="btn bsig" onclick="irA(8)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 8 -->
+<section class="mod" id="mod-8">
+  <div class="mh"><span class="ic">🗺️</span><div><h2>Módulo 8 de 9: Cartografía</h2><p>Mapas y planos del territorio</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-tipo_fuente_espacial">
+      <div class="fh"><label>¿La comunidad tiene mapa o plano del territorio?</label><button class="bleer" onclick="say(this,'¿La comunidad tiene algún mapa o plano del territorio?')">🔊</button></div>
+      <div class="ops" id="op-mapa">
+        <label><input type="radio" name="mapa" value="Plano_Oficial"/><span>🏛️ Plano oficial</span></label>
+        <label><input type="radio" name="mapa" value="Mapa_Comunitario"/><span>✍️ Mapa comunitario</span></label>
+        <label><input type="radio" name="mapa" value="Sin_Mapa"/><span>❌ Sin mapa</span></label>
+      </div>
+      <input type="hidden" id="tipo_fuente_espacial"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+    <div class="f" id="c-numero_plano">
+      <div class="fh"><label>Número de plano o referencia cartográfica</label><button class="bleer" onclick="say(this,'¿Tiene número de plano o referencia cartográfica? Si no aplica escriba no aplica.')">🔊</button></div>
+      <input type="text" id="numero_plano" placeholder="Número de plano o 'no aplica'"/>
+      <div class="me">Ingrese el número de plano o "no aplica".</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(7)">← Anterior</button><button class="btn bsig" onclick="irA(9)">Siguiente →</button></div>
+</section>
+
+<!-- MÓDULO 9 — con grabador de voz -->
+<section class="mod" id="mod-9">
+  <div class="mh"><span class="ic">✅</span><div><h2>Módulo 9 de 9: Validación comunitaria</h2><p>Confirmación y cierre</p></div></div>
+  <div class="mb">
+    <div class="f" id="c-validacion">
+      <div class="fh"><label>¿La información fue revisada por la comunidad?</label><button class="bleer" onclick="say(this,'¿La información registrada fue revisada y aprobada por su comunidad?')">🔊</button></div>
+      <div class="ops" id="op-val">
+        <label><input type="radio" name="val" value="Validada_Asamblea"/><span>🏛️ En asamblea</span></label>
+        <label><input type="radio" name="val" value="Revisada_Autoridades"/><span>👥 Por autoridades</span></label>
+        <label><input type="radio" name="val" value="Pendiente"/><span>⏳ Pendiente</span></label>
+      </div>
+      <input type="hidden" id="validacion"/>
+      <div class="me">Seleccione una opción.</div>
+    </div>
+    <div class="f" id="c-observaciones_finales">
+      <div class="fh"><label>Observaciones o comentarios finales (opcional)</label><button class="bleer" onclick="say(this,'¿Desea agregar alguna observación final? Puede escribirla o grabarla en audio.')">🔊</button></div>
+      <div class="ay">Puede escribir o grabar sus observaciones en audio.</div>
+      <textarea id="observaciones_finales" placeholder="Agregue aquí cualquier información adicional..."></textarea>
+      <div class="grab" id="gr-observaciones_finales">
+        <div class="grab-t">🎙️ O grabe sus observaciones en audio</div>
+        <div class="grab-c">
+          <button class="gbtn ini" id="gi-observaciones_finales" onclick="startRec('observaciones_finales')">🎤 Iniciar</button>
+          <button class="gbtn det" id="gs-observaciones_finales" onclick="stopRec('observaciones_finales')" style="display:none">⏹ Detener</button>
+          <div class="rind" id="ri-observaciones_finales"><div class="rd"></div><span>Grabando</span><span id="rt-observaciones_finales">0:00</span></div>
+        </div>
+        <div class="ag" id="ag-observaciones_finales">
+          <div class="ag-t">🎵 Audio grabado:</div>
+          <audio id="ap-observaciones_finales" controls></audio>
+          <button class="ab" onclick="delRec('observaciones_finales')">🗑️ Borrar grabación</button>
+        </div>
+      </div>
+    </div>
+    <div class="f" id="c-consentimiento">
+      <div class="fh"><label>Confirmación de consentimiento libre y voluntario</label><button class="bleer" onclick="say(this,'Confirme que da su consentimiento libre y voluntario para registrar esta información.')">🔊</button></div>
+      <div class="ops" id="op-con">
+        <label><input type="radio" name="con" value="Sí"/><span>✅ Sí, doy mi consentimiento</span></label>
+        <label><input type="radio" name="con" value="No"/><span>❌ No</span></label>
+      </div>
+      <input type="hidden" id="consentimiento" value="Sí"/>
+      <div class="me">Debe confirmar el consentimiento.</div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn bant" onclick="irA(8)">← Anterior</button><button class="btn bsig" onclick="irA(10)">Ver resumen →</button></div>
+</section>
+
+<!-- RESUMEN -->
+<section class="mod" id="mod-10">
+  <div class="mh"><span class="ic">📋</span><div><h2>Resumen del registro</h2><p>Revise antes de enviar</p></div></div>
+  <div class="mb" id="res"></div>
+  <div class="nav">
+    <button class="btn bant" onclick="irA(9)">← Corregir</button>
+    <button class="btn bsig" onclick="enviar()">📤 Enviar registro</button>
+  </div>
+</section>
+
+<!-- ESTADO ENVÍO -->
+<div id="ee">
+  <div class="ei" id="ei">⏳</div>
+  <h3 id="et">Guardando...</h3>
+  <p id="em"></p>
+  <div id="bpw"><div id="bpf"></div></div>
+  <button id="bret" onclick="reintentar()">🔄 Reintentar ahora</button>
+</div>
+
+<footer><span>🌿 Registro Territorial</span><span id="fg">💾 Autoguardado activo</span></footer>
+
+<script>
+/* ── CONFIG ── */
+const EP  = `${location.protocol}//${location.hostname}:3008/v1/formulario-submit`
+const SK  = 'rtc_v3'
+const MK  = 'rtc_mod_v3'
+const TM  = 9
+let MA=1, online=navigator.onLine, pending=null
+
+/* ── SERVICE WORKER ── */
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))
+
+/* ── INDEXEDDB ── */
+let db=null
+const idb_open=()=>new Promise((ok,er)=>{
+  if(db){ok(db);return}
+  const r=indexedDB.open('rtc_audio',1)
+  r.onupgradeneeded=e=>e.target.result.createObjectStore('recs',{keyPath:'id'})
+  r.onsuccess=e=>{db=e.target.result;ok(db)}
+  r.onerror=e=>er(e.target.error)
+})
+const idb_set=async(id,blob)=>{const d=await idb_open();const t=d.transaction('recs','readwrite');t.objectStore('recs').put({id,blob,ts:Date.now()});return new Promise((ok,er)=>{t.oncomplete=ok;t.onerror=er})}
+const idb_get=async(id)=>{const d=await idb_open();const t=d.transaction('recs','readonly');const r=t.objectStore('recs').get(id);return new Promise((ok,er)=>{r.onsuccess=()=>ok(r.result?.blob||null);r.onerror=()=>er(r.error)})}
+const idb_del=async(id)=>{const d=await idb_open();const t=d.transaction('recs','readwrite');t.objectStore('recs').delete(id);return new Promise((ok,er)=>{t.oncomplete=ok;t.onerror=er})}
+const idb_keys=async()=>{const d=await idb_open();const t=d.transaction('recs','readonly');const r=t.objectStore('recs').getAllKeys();return new Promise((ok,er)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>er(r.error)})}
+
+/* ── TTS ── */
+let tts=false, velI=1, velBtn=null
+const VELS=[{l:'🐢 Lento',r:.75},{l:'▶️ Normal',r:1},{l:'🐇 Rápido',r:1.35}]
+const synth=window.speechSynthesis
+const vozES=()=>{const vs=synth.getVoices();return vs.find(v=>v.lang==='es-CO')||vs.find(v=>v.lang==='es-MX')||vs.find(v=>v.lang.startsWith('es'))||vs[0]}
+
+function say(btn,txt){
+  if(!tts){toast('🔊 Active la lectura con el botón de arriba');return}
+  synth.cancel()
+  if(velBtn){velBtn.classList.remove('ley');velBtn=null}
+  const u=new SpeechSynthesisUtterance(txt)
+  u.lang='es-CO';u.rate=VELS[velI].r;u.pitch=1
+  const v=vozES();if(v)u.voice=v
+  btn.classList.add('ley');velBtn=btn
+  u.onend=u.onerror=()=>{btn.classList.remove('ley');velBtn=null;document.getElementById('tts-stop').style.display='none'}
+  synth.speak(u)
+  document.getElementById('tts-stop').style.display='flex'
+}
+
+function toggleTTS(){
+  tts=!tts
+  const b=document.getElementById('tts-btn')
+  b.classList.toggle('on',tts)
+  b.textContent=tts?'🔊 Lectura activa':'🔊 Activar lectura'
+  if(!tts){synth.cancel();if(velBtn){velBtn.classList.remove('ley');velBtn=null}document.getElementById('tts-stop').style.display='none'}
+  else{toast('🔊 Toque el ícono 🔊 junto a cada pregunta');const i=new SpeechSynthesisUtterance('');synth.speak(i)}
+  localStorage.setItem('rtc_tts',tts?'1':'0')
+}
+function stopTTS(){synth.cancel();if(velBtn){velBtn.classList.remove('ley');velBtn=null}document.getElementById('tts-stop').style.display='none'}
+function cambiarVel(){velI=(velI+1)%3;document.getElementById('tts-vel').textContent=VELS[velI].l;toast(`Velocidad: ${VELS[velI].l.replace(/[🐢▶️🐇 ]/g,'')}`)}
+
+/* ── GRABACIÓN ── */
+const RECS={}
+async function startRec(c){
+  for(const[k,g]of Object.entries(RECS))if(g?.rec?.state==='recording')await stopRec(k)
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({audio:true})
+    const mt=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4'
+    const rec=new MediaRecorder(s,{mimeType:mt})
+    const chunks=[];let secs=0
+    rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)}
+    rec.onstop=async()=>{
+      s.getTracks().forEach(t=>t.stop())
+      const blob=new Blob(chunks,{type:mt})
+      const url=URL.createObjectURL(blob)
+      try{await idb_set('a_'+c,blob)}catch(e){}
+      const ap=document.getElementById('ap-'+c)
+      if(ap)ap.src=url
+      const ag=document.getElementById('ag-'+c)
+      if(ag)ag.classList.add('vis')
+      RECS[c]={...RECS[c],blob,url}
+      save();toast('✅ Audio guardado')
+    }
+    const tm=setInterval(()=>{
+      secs++;const mm=Math.floor(secs/60),ss=String(secs%60).padStart(2,'0')
+      const el=document.getElementById('rt-'+c);if(el)el.textContent=`${mm}:${ss}`
+      if(secs>=300)stopRec(c)
+    },1000)
+    RECS[c]={rec,chunks,tm,blob:null,url:null}
+    rec.start(250)
+    document.getElementById('gi-'+c).style.display='none'
+    document.getElementById('gs-'+c).style.display='flex'
+    document.getElementById('ri-'+c).classList.add('act')
+    document.getElementById('rt-'+c).textContent='0:00'
+  }catch(e){
+    toast(e.name==='NotAllowedError'?'❌ Permiso de micrófono denegado':'❌ No se pudo acceder al micrófono')
+  }
+}
+function stopRec(c){
+  const g=RECS[c];if(!g)return
+  if(g.tm)clearInterval(g.tm)
+  if(g.rec?.state==='recording')g.rec.stop()
+  document.getElementById('gi-'+c).style.display='flex'
+  document.getElementById('gs-'+c).style.display='none'
+  document.getElementById('ri-'+c).classList.remove('act')
+}
+async function delRec(c){
+  const g=RECS[c];if(g?.url)URL.revokeObjectURL(g.url)
+  delete RECS[c]
+  try{await idb_del('a_'+c)}catch(e){}
+  const ap=document.getElementById('ap-'+c);if(ap)ap.src=''
+  const ag=document.getElementById('ag-'+c);if(ag)ag.classList.remove('vis')
+  toast('🗑️ Grabación eliminada');save()
+}
+const restoreAudios=async()=>{
+  try{
+    const keys=await idb_keys()
+    for(const k of keys){
+      if(!k.startsWith('a_'))continue
+      const c=k.slice(2),blob=await idb_get(k)
+      if(!blob)continue
+      const url=URL.createObjectURL(blob)
+      const ap=document.getElementById('ap-'+c);if(ap)ap.src=url
+      const ag=document.getElementById('ag-'+c);if(ag)ag.classList.add('vis')
+      RECS[c]={blob,url}
+    }
+  }catch(e){}
+}
+const b64=blob=>new Promise((ok,er)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=er;r.readAsDataURL(blob)})
+const getAudios=async()=>{const A={};for(const[c,g]of Object.entries(RECS)){if(!g.blob)continue;try{A[c]={base64:await b64(g.blob),mimeType:g.blob.type,size:g.blob.size}}catch(e){}}return A}
+
+/* ── CONEXIÓN ── */
+function setOnline(v){
+  online=v
+  const b=document.getElementById('sb'),t=document.getElementById('st')
+  b.className=v?'on':'off'
+  t.textContent=v?'✅ Conexión activa':'📶 Sin conexión — datos guardados localmente'
+  if(v&&pending){toast('🌐 Conexión recuperada — enviando...');setTimeout(()=>send(pending,true),1500)}
+}
+window.addEventListener('online',()=>setOnline(true))
+window.addEventListener('offline',()=>setOnline(false))
+setOnline(navigator.onLine)
+
+/* ── CHIPS ── */
+const CMAP={'op-org':'tipo_organizacion_filial','op-leg':'legitimidad','op-ant':'antiguedad_territorio','op-rec':'reconocimiento_estado','op-zon':'zonas_especiales','op-uso':'uso_territorio','op-reg':'reglas_internas','op-acto':'tipo_acto_administrativo','op-mapa':'tipo_fuente_espacial','op-val':'validacion','op-con':'consentimiento'}
+document.querySelectorAll('.ops').forEach(g=>{
+  g.querySelectorAll('label').forEach(l=>{
+    const i=l.querySelector('input')
+    l.addEventListener('click',()=>{
+      g.querySelectorAll('label').forEach(x=>x.classList.remove('sel'))
+      l.classList.add('sel');i.checked=true
+      const h=document.getElementById(CMAP[g.id]);if(h)h.value=i.value
+      save()
+    })
+  })
+})
+
+/* ── GPS ── */
+function captureGPS(){
+  const r=document.getElementById('gr');r.style.display='block';r.textContent='📍 Obteniendo...'
+  if(!navigator.geolocation){r.textContent='❌ GPS no disponible';return}
+  navigator.geolocation.getCurrentPosition(
+    p=>{const la=p.coords.latitude.toFixed(6),lo=p.coords.longitude.toFixed(6);document.getElementById('latitud').value=la;document.getElementById('longitud').value=lo;r.textContent=`✅ ${la}, ${lo} (±${Math.round(p.coords.accuracy)}m)`;save()},
+    e=>{r.textContent=`⚠️ ${e.message}`},{enableHighAccuracy:true,timeout:10000}
+  )
+}
+
+/* ── NAVEGACIÓN ── */
+function irA(n){
+  if(n>MA&&!validate(MA))return
+  if(n===10)genResumen()
+  synth.cancel()
+  document.querySelectorAll('.mod').forEach(m=>m.classList.remove('act'))
+  const t=document.getElementById('mod-'+n)
+  if(t){t.classList.add('act');MA=n;window.scrollTo({top:0,behavior:'smooth'});updateP();localStorage.setItem(MK,n);save()}
+}
+function updateP(){
+  const p=Math.round(((MA-1)/TM)*100)
+  document.getElementById('pf').style.width=p+'%'
+  document.getElementById('pp').textContent=p+'%'
+  document.getElementById('pm').textContent=MA<=TM?`Módulo ${MA} de ${TM}`:'Resumen final'
+}
+
+/* ── VALIDACIÓN ── */
+const VPM={1:['nombre_comunidad','tipo_comunidad','pueblo_indigena','tipo_organizacion_filial','familias_aprox','personas_aprox','numero_mujeres','numero_hombres'],2:['autoridades','cargo_autoridad','numero_documento_representante','legitimidad'],3:['antiguedad_territorio','descripcion_historia'],4:['nombre_territorio','nombre_predio','area_acto_administrativo','tipo_procedimiento','departamento','municipio','vereda','limites_territorio','reconocimiento_estado','zonas_especiales'],5:['tipo_derecho','restriccion_territorio'],6:['uso_territorio','reglas_internas'],7:['tipo_acto_administrativo','numero_acto_administrativo','fecha_acto_administrativo'],8:['tipo_fuente_espacial','numero_plano'],9:['validacion','consentimiento']}
+function vc(id){
+  const el=document.getElementById(id),c=document.getElementById('c-'+id)
+  if(!el||!c)return true
+  const v=el.value.trim();let ok=v.length>0
+  if(['familias_aprox','personas_aprox','numero_mujeres','numero_hombres'].includes(id))ok=v!==''&&!isNaN(parseInt(v))&&parseInt(v)>=0
+  if(id==='fecha_acto_administrativo'){const x=v.toLowerCase();ok=['desconocida','desconocido','no aplica'].includes(x)||/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(v)}
+  if(id==='area_acto_administrativo'){const x=v.toLowerCase();ok=['desconocida','desconocido'].includes(x)||(!isNaN(parseFloat(v))&&parseFloat(v)>=0)}
+  if(id==='descripcion_historia')ok=v.length>=3||!!RECS['descripcion_historia']?.blob
+  c.classList.toggle('err',!ok);return ok
+}
+function validate(n){const ok=( VPM[n]||[]).map(vc).every(Boolean);if(!ok)toast(`⚠️ Complete los campos del Módulo ${n}`);return ok}
+
+/* ── AUTOGUARDADO ── */
+const ALL=['nombre_comunidad','tipo_comunidad','pueblo_indigena','tipo_organizacion_filial','familias_aprox','personas_aprox','numero_mujeres','numero_hombres','autoridades','cargo_autoridad','numero_documento_representante','legitimidad','antiguedad_territorio','descripcion_historia','nombre_territorio','nombre_predio','area_acto_administrativo','tipo_procedimiento','departamento','municipio','vereda','latitud','longitud','limites_territorio','reconocimiento_estado','zonas_especiales','tipo_derecho','restriccion_territorio','uso_territorio','reglas_internas','tipo_acto_administrativo','numero_acto_administrativo','fecha_acto_administrativo','tipo_fuente_espacial','numero_plano','validacion','observaciones_finales','consentimiento']
+function read(){const d={};ALL.forEach(id=>{const el=document.getElementById(id);if(el)d[id]=el.value});d._audios=Object.keys(RECS).filter(k=>RECS[k]?.blob);d._ts=new Date().toISOString();d._mod=MA;return d}
+function save(){try{localStorage.setItem(SK,JSON.stringify(read()));document.getElementById('fg').textContent='💾 '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}catch(e){}}
+function load(){
+  try{
+    const raw=localStorage.getItem(SK);if(!raw)return false
+    const d=JSON.parse(raw)
+    ALL.forEach(id=>{const el=document.getElementById(id);if(el&&d[id]!==undefined)el.value=d[id]})
+    Object.entries(CMAP).forEach(([gid,hid])=>{
+      const val=d[hid];if(!val)return
+      const g=document.getElementById(gid);if(!g)return
+      g.querySelectorAll('label').forEach(l=>{const i=l.querySelector('input');if(i?.value===val){l.classList.add('sel');i.checked=true}})
+    })
+    return d
+  }catch(e){return false}
+}
+document.querySelectorAll('input,textarea,select').forEach(el=>{el.addEventListener('input',save);el.addEventListener('change',save)})
+
+/* ── RESUMEN ── */
+const ETQ={nombre_comunidad:'Nombre comunidad',tipo_comunidad:'Tipo comunidad',pueblo_indigena:'Pueblo étnico',tipo_organizacion_filial:'Organización',familias_aprox:'Familias',personas_aprox:'Personas',numero_mujeres:'Mujeres',numero_hombres:'Hombres',autoridades:'Representante',cargo_autoridad:'Cargo',numero_documento_representante:'Documento',legitimidad:'Legitimidad',antiguedad_territorio:'Antigüedad',descripcion_historia:'Historia',nombre_territorio:'Territorio',nombre_predio:'Predio',area_acto_administrativo:'Área (ha)',tipo_procedimiento:'Procedimiento',departamento:'Departamento',municipio:'Municipio',vereda:'Vereda',latitud:'Lat.',longitud:'Lon.',limites_territorio:'Límites',reconocimiento_estado:'Reconocimiento',zonas_especiales:'Zonas especiales',tipo_derecho:'Derecho',restriccion_territorio:'Restricciones',uso_territorio:'Uso',reglas_internas:'Reglas internas',tipo_acto_administrativo:'Tipo acto',numero_acto_administrativo:'Nº acto',fecha_acto_administrativo:'Fecha acto',tipo_fuente_espacial:'Fuente espacial',numero_plano:'Nº plano',validacion:'Validación',observaciones_finales:'Observaciones',consentimiento:'Consentimiento'}
+const GRS=[{t:'🏡 Módulo 1',c:['nombre_comunidad','tipo_comunidad','pueblo_indigena','tipo_organizacion_filial','familias_aprox','personas_aprox','numero_mujeres','numero_hombres']},{t:'👤 Módulo 2',c:['autoridades','cargo_autoridad','numero_documento_representante','legitimidad']},{t:'📖 Módulo 3',c:['antiguedad_territorio','descripcion_historia']},{t:'🌍 Módulo 4',c:['nombre_territorio','nombre_predio','area_acto_administrativo','tipo_procedimiento','departamento','municipio','vereda','latitud','longitud','limites_territorio','reconocimiento_estado','zonas_especiales']},{t:'⚖️ Módulo 5',c:['tipo_derecho','restriccion_territorio']},{t:'🌱 Módulo 6',c:['uso_territorio','reglas_internas']},{t:'📑 Módulo 7',c:['tipo_acto_administrativo','numero_acto_administrativo','fecha_acto_administrativo']},{t:'🗺️ Módulo 8',c:['tipo_fuente_espacial','numero_plano']},{t:'✅ Módulo 9',c:['validacion','observaciones_finales','consentimiento']}]
+function genResumen(){
+  const d=read(),cont=document.getElementById('res'),audios=new Set(d._audios||[])
+  cont.innerHTML=''
+  GRS.forEach(g=>{
+    const div=document.createElement('div');div.className='rg'
+    div.innerHTML=`<div class="rt">${g.t}</div>`
+    const items=document.createElement('div');items.className='ri'
+    g.c.forEach(id=>{
+      const val=d[id],hasA=audios.has(id)
+      if(!val&&!hasA)return
+      const fila=document.createElement('div');fila.className='rf'
+      const vt=val?(val.length>55?val.slice(0,55)+'…':val):''
+      fila.innerHTML=`<span class="rk">${ETQ[id]||id}</span><span class="rv">${vt}${hasA?' <span class="ab2">🎙️ +audio</span>':''}</span>`
+      items.appendChild(fila)
+    })
+    div.appendChild(items);cont.appendChild(div)
+  })
+}
+
+/* ── ENVÍO ── */
+function showState(cls,ic,ti,ms,ret=false,prog=false){
+  const el=document.getElementById('ee');el.className=cls;el.style.display='block'
+  document.getElementById('ei').textContent=ic
+  document.getElementById('et').textContent=ti
+  document.getElementById('em').textContent=ms
+  document.getElementById('bret').style.display=ret?'block':'none'
+  document.getElementById('bpw').style.display=prog?'block':'none'
+  document.querySelectorAll('.mod').forEach(m=>m.classList.remove('act'))
+  window.scrollTo({top:0,behavior:'smooth'})
+}
+function setProg(p){document.getElementById('bpf').style.width=p+'%'}
+
+async function send(data,retry=false){
+  showState('env','⏳','Preparando envío...','Recopilando datos y audios...',false,true);setProg(10)
+  try{
+    const audios=await getAudios();const ac=Object.keys(audios);setProg(40)
+    showState('env','⏳','Enviando registro...',ac.length>0?`Enviando con ${ac.length} audio(s)...`:'Enviando al servidor...',false,true);setProg(55)
+    const res=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({formulario:data,audios,fuente:'pwa_offline'}),signal:AbortSignal.timeout(30000)})
+    setProg(85);const json=await res.json()
+    if(res.ok&&json.id){
+      setProg(100);pending=null
+      localStorage.removeItem(SK);localStorage.removeItem(MK)
+      for(const c of ac)try{await idb_del('a_'+c)}catch(e){}
+      showState('ok','🎉','¡Registro enviado exitosamente!',`ID: ${json.id}\nComunidad: ${data.nombre_comunidad||'N/A'}${ac.length>0?'\nAudios: '+ac.join(', '):''}\n\nGracias por participar. 🌿`)
+    }else throw new Error(json.error||`Error ${res.status}`)
+  }catch(err){
+    const noConn=!navigator.onLine||err.name==='AbortError'||err.name==='TypeError'
+    pending=data
+    showState(noConn?'pend':'err',noConn?'📦':'❌',noConn?(retry?'Aún sin conexión':'Guardado sin conexión'):'Error al enviar',noConn?'Sus respuestas y audios están guardados en el dispositivo.\nAl reconectarse se enviarán automáticamente.':`Error: ${err.message}`,true)
+  }
+}
+function reintentar(){if(!online){toast('⚠️ Aún sin conexión');return}send(pending||read(),true)}
+async function enviar(){
+  let ok=true
+  for(let i=1;i<=TM;i++){if(!(VPM[i]||[]).map(vc).every(Boolean)){ok=false;toast(`⚠️ Campos incompletos en Módulo ${i}`);setTimeout(()=>irA(i),800);break}}
+  if(!ok)return
+  const d=read();pending=d
+  if(!online){save();showState('pend','📦','Guardado sin conexión','No hay internet, pero su registro y audios están guardados.\nToque "Reintentar" al conectarse.',true);return}
+  await send(d)
+}
+
+/* ── TOAST ── */
+function toast(m,t=2500){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),t)}
+
+/* ── INICIO ── */
+function nuevoreg(){localStorage.removeItem(SK);localStorage.removeItem(MK);MA=1;document.getElementById('pi').style.display='none';document.getElementById('pw').style.display='block';irA(1)}
+function continuareg(){
+  const d=load();if(!d){nuevoreg();return}
+  MA=parseInt(d._mod)||1
+  document.getElementById('pi').style.display='none';document.getElementById('pw').style.display='block'
+  irA(MA);toast('📂 Registro anterior recuperado');restoreAudios()
+}
+window.addEventListener('load',async()=>{
+  if(localStorage.getItem(SK))document.getElementById('bcont').style.display='block'
+  if(localStorage.getItem('rtc_tts')==='1'){tts=true;document.getElementById('tts-btn').classList.add('on');document.getElementById('tts-btn').textContent='🔊 Lectura activa'}
+  if(synth.onvoiceschanged!==undefined)synth.onvoiceschanged=()=>{}
+  await restoreAudios()
+})
+document.getElementById('bini').addEventListener('click',nuevoreg)
+document.getElementById('bcont').addEventListener('click',continuareg)
+document.getElementById('tts-btn').addEventListener('click',toggleTTS)
+</script>
+</body>
+</html>

@@ -1,0 +1,2989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geovisor · Catastro Étnico</title>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.css"/>
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   RESET & TOKENS — tema oscuro
+   ══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:          #0b0f14;
+  --bg-2:        #0e141b;
+  --surface:     #141b24;
+  --surface-2:   #1b2430;
+  --surface-3:   #232d3a;
+  --border:      #263140;
+  --text:        #e7ebf0;
+  --text-2:      #8b96a5;
+  --text-3:      #5b6674;
+
+  --green-dark:  #14532d;
+  --green:       #16a34a;
+  --green-mid:   #22c55e;
+  --green-light: #4ade80;
+  --green-pale:  rgba(34,197,94,.14);
+
+  --amber:       #f59e0b;
+  --red:         #ef4444;
+  --red-pale:    rgba(239,68,68,.14);
+  --blue:        #3b82f6;
+  --purple:      #a78bfa;
+
+  --sidebar-w:   290px;
+  --topbar-h:    68px;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  height: 100dvh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+input, select, textarea, button { font-family: inherit; }
+input, select, textarea {
+  background: var(--surface-2); color: var(--text);
+  border: 1.5px solid var(--border); border-radius: 6px;
+  padding: 7px 10px; font-size: .85rem; outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--green); }
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+a { color: var(--green-mid); }
+
+/* ══════════════════════════════════════════════════════════════
+   TOP BAR
+   ══════════════════════════════════════════════════════════════ */
+#topbar {
+  height: var(--topbar-h); background: var(--bg-2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 18px; padding: 0 20px;
+  flex-shrink: 0; z-index: 1000;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand .logo {
+  width: 38px; height: 38px; border-radius: 10px; background: var(--green-pale);
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex: none;
+}
+.brand-txt h1 { font-size: .92rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+.brand-txt p  { font-size: .68rem; color: var(--text-2); }
+
+#region-selector {
+  font-size: .78rem; padding: 6px 10px; max-width: 220px;
+}
+
+.tabs-nav { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+.tab-btn {
+  background: transparent; border: none; color: var(--text-2); white-space: nowrap;
+  padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: .82rem;
+  transition: background .15s, color .15s; display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover  { background: var(--surface-2); color: var(--text); }
+.tab-btn.active { background: var(--green-pale); color: var(--green-light); font-weight: 600; }
+
+.live-pill {
+  display: flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--text-2);
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: 99px; white-space: nowrap;
+}
+#ws-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); transition: background .3s; }
+#ws-dot.online { background: var(--green-light); box-shadow: 0 0 6px var(--green-light); }
+
+.icon-btn {
+  background: transparent; border: none; color: var(--text-2);
+  width: 36px; height: 36px; border-radius: 9px; cursor: pointer; font-size: 1.05rem;
+  display: flex; align-items: center; justify-content: center; transition: background .15s;
+  position: relative; flex: none;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+#badge-alerta {
+  position: absolute; top: 1px; right: 1px; background: var(--red);
+  color: #fff; font-size: .6rem; font-weight: 700; border-radius: 99px;
+  padding: 1px 5px; display: none; line-height: 1.3;
+}
+
+.avatar-wrap { position: relative; }
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--green);
+  color: #fff; font-weight: 700; font-size: .9rem; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; flex: none;
+}
+.dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0; min-width: 220px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.5); z-index: 1500; display: none; overflow: hidden;
+}
+.dropdown.open { display: block; }
+.dropdown-user { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.dropdown-user .nm { font-size: .86rem; font-weight: 700; }
+.dropdown-user .rl { font-size: .72rem; color: var(--text-2); text-transform: capitalize; }
+.dropdown-item {
+  padding: 10px 14px; font-size: .82rem; cursor: pointer; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.dropdown-item:hover { background: var(--surface-2); }
+
+/* ══════════════════════════════════════════════════════════════
+   PAGES (una visible a la vez)
+   ══════════════════════════════════════════════════════════════ */
+#app { flex: 1; overflow: hidden; position: relative; }
+.page { position: absolute; inset: 0; overflow-y: auto; }
+.page[hidden] { display: none; }
+.page-pad { padding: 22px 26px; }
+.page-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.page-sub   { font-size: .8rem; color: var(--text-2); margin-bottom: 20px; }
+
+/* ── KPI cards ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px;
+}
+.kpi-card .kpi-lbl { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.kpi-card .kpi-num { font-size: 2rem; font-weight: 800; color: var(--text); margin: 6px 0 4px; }
+.kpi-card .kpi-sub { font-size: .74rem; color: var(--text-2); }
+.kpi-card .kpi-sub.up { color: var(--green-light); }
+
+/* ── Charts / cards ── */
+.charts-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-bottom: 22px; }
+@media (max-width: 950px) { .charts-grid { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px;
+}
+.card h3 { font-size: .84rem; color: var(--text); margin-bottom: 14px; font-weight: 700; }
+.empty-state { color: var(--text-3); font-size: .82rem; text-align: center; padding: 40px 10px; }
+
+/* ── Tabla general ── */
+.tabla-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.tabla-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.tabla-card-head h3 { font-size: .88rem; font-weight: 700; }
+table.datatable { width: 100%; border-collapse: collapse; font-size: .8rem; }
+table.datatable thead th {
+  text-align: left; color: var(--text-2); font-weight: 600; font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .05em; padding: 10px 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface-2); white-space: nowrap;
+}
+table.datatable tbody td { padding: 11px 16px; border-bottom: 1px solid var(--border); color: var(--text); }
+table.datatable tbody tr:hover { background: var(--surface-2); cursor: pointer; }
+table.datatable tbody tr:last-child td { border-bottom: none; }
+
+.badge { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: .68rem; font-weight: 700; }
+.badge-green { background: var(--green-pale); color: var(--green-light); }
+.badge-gray  { background: var(--surface-3); color: var(--text-2); }
+.badge-red   { background: var(--red-pale); color: #fca5a5; }
+
+.btn-sm {
+  padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer;
+  font-size: .8rem; font-weight: 600; transition: background .15s;
+}
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-secondary { background: var(--surface-3); color: var(--text); }
+.btn-secondary:hover { background: #2b3644; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-row { display: flex; gap: 8px; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { background: var(--surface-2); }
+
+/* ══════════════════════════════════════════════════════════════
+   MAPAS — sidebar + mapa + detalle
+   ══════════════════════════════════════════════════════════════ */
+#layout { position: absolute; inset: 0; display: flex; overflow: hidden; }
+#sidebar {
+  width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; z-index: 10;
+}
+.sb-section { padding: 14px; border-bottom: 1px solid var(--border); }
+.sb-section label { font-size: .7rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 6px; }
+.sb-section input, .sb-section select { width: 100%; }
+.sb-row { display: flex; gap: 6px; }
+.sb-row input, .sb-row select { flex: 1; }
+
+.vista-opts { display: flex; gap: 4px; margin-top: 6px; }
+.vista-opt {
+  flex: 1; padding: 7px; text-align: center; border-radius: 6px; cursor: pointer;
+  font-size: .74rem; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text-2);
+  transition: all .15s;
+}
+.vista-opt.active { background: var(--green-pale); border-color: var(--green); color: var(--green-light); font-weight: 600; }
+
+#lista-wrapper { flex: 1; overflow-y: auto; }
+#lista-header { padding: 8px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: .75rem; color: var(--text-2); display: flex; justify-content: space-between; }
+.reg-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; }
+.reg-item:hover  { background: var(--surface-2); }
+.reg-item.active { background: var(--green-pale); border-left: 3px solid var(--green); }
+.reg-nombre { font-size: .86rem; font-weight: 600; color: var(--text); }
+.reg-sub    { font-size: .73rem; color: var(--text-2); margin-top: 2px; }
+.reg-badge  { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: .66rem; font-weight: 600; margin-top: 5px; }
+
+.b-Resguardo_Indigena    { background: rgba(34,197,94,.18);  color: #4ade80; }
+.b-Comunidad_Negra       { background: rgba(245,158,11,.18); color: #fbbf24; }
+.b-Cabildo               { background: rgba(59,130,246,.18); color: #60a5fa; }
+.b-Parcialidad           { background: rgba(236,72,153,.18); color: #f472b6; }
+.b-Territorio_Colectivo  { background: rgba(167,139,250,.18);color: #c4b5fd; }
+.b-default               { background: var(--surface-3);      color: var(--text-2); }
+
+#map-area { flex: 1; position: relative; display: flex; flex-direction: column; }
+#map { flex: 1; background: var(--bg-2); }
+
+#timeline-bar {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 10px 20px; display: none; align-items: center; gap: 12px;
+}
+#timeline-bar label { font-size: .8rem; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+#timeline-slider { flex: 1; accent-color: var(--green); }
+#timeline-val { font-size: .8rem; color: var(--text); min-width: 80px; text-align: center; }
+
+.map-toolbar {
+  position: absolute; top: 12px; left: 12px; z-index: 400; display: flex; gap: 8px;
+}
+.map-toolbar .btn-sm { box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+
+/* ── DETAIL PANEL (overlay fijo, funciona en cualquier pestaña) ── */
+#detail {
+  position: fixed; top: 0; right: 0; width: 360px; height: 100%;
+  background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; transform: translateX(100%);
+  transition: transform .25s ease; z-index: 2500; overflow: hidden;
+}
+#detail.open { transform: translateX(0); }
+#detail-header { padding: 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+#detail-header h3 { flex: 1; font-size: .94rem; }
+#detail-close { background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 1.2rem; }
+#detail-body { flex: 1; overflow-y: auto; padding: 16px; }
+.detail-section { margin-bottom: 18px; }
+.detail-section h4 {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--green-light); border-bottom: 2px solid var(--green-pale); padding-bottom: 5px; margin-bottom: 9px;
+}
+.detail-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: .83rem; }
+.detail-row .lbl { color: var(--text-2); min-width: 120px; flex: none; }
+.detail-row .val { font-weight: 500; color: var(--text); }
+
+.fotos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px; margin-top: 6px; }
+.foto-item { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--bg-2); cursor: pointer; }
+.foto-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-item .cat { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.7); color: #fff; font-size: .58rem; padding: 2px 4px; text-align: center; line-height: 1.25; }
+.foto-item.cargando { display: flex; align-items: center; justify-content: center; font-size: .6rem; color: var(--text-2); }
+
+#foto-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 4000; display: none; align-items: center; justify-content: center; padding: 24px; }
+#foto-lightbox.open { display: flex; }
+#foto-lightbox img { max-width: 100%; max-height: 88vh; border-radius: 8px; }
+#foto-lightbox .cerrar { position: absolute; top: 16px; right: 22px; color: #fff; font-size: 2rem; cursor: pointer; line-height: 1; background: none; border: 0; }
+#foto-lightbox .pie { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: #e5e7eb; font-size: .84rem; padding: 0 24px; }
+
+.transcripcion { border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 8px; }
+.transcripcion .preg { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
+.transcripcion .txt  { font-size: .82rem; font-style: italic; color: var(--text); }
+.btn-chatbot { width: 100%; margin-top: 8px; padding: 10px; background: var(--green); color:#fff; border: none; border-radius: 8px; cursor: pointer; font-size: .85rem; font-weight: 600; }
+.btn-chatbot:hover { background: var(--green-dark); }
+.btn-eliminar { width: 100%; margin-top: 8px; padding: 10px; background: transparent; color: #f87171; border: 1.5px solid #f87171; border-radius: 8px; cursor: pointer; font-size: .85rem; font-weight: 600; }
+.btn-eliminar:hover { background: rgba(239,68,68,.1); }
+.btn-eliminar-fam { background: none; border: none; color: #f87171; cursor: pointer; font-size: .78rem; padding: 2px 6px; margin-left: 6px; border-radius: 4px; }
+.btn-eliminar-fam:hover { background: rgba(239,68,68,.1); }
+
+/* ══════════════════════════════════════════════════════════════
+   CAPAS
+   ══════════════════════════════════════════════════════════════ */
+.capas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 16px; }
+
+/* ══════════════════════════════════════════════════════════════
+   ACTIVOS
+   ══════════════════════════════════════════════════════════════ */
+.activos-toolbar { display: flex; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); align-items: center; }
+.activos-toolbar input { flex: 1; max-width: 340px; }
+.pagina-controles { display: flex; align-items: center; gap: 10px; padding: 14px 20px; font-size: .8rem; color: var(--text-2); }
+
+/* ══════════════════════════════════════════════════════════════
+   ANÁLISIS
+   ══════════════════════════════════════════════════════════════ */
+.diff-neg { color: #f87171; font-weight: 700; }
+.diff-mid { color: var(--amber); font-weight: 700; }
+.diff-pos { color: var(--green-light); font-weight: 700; }
+.traslape-ok {
+  display: flex; align-items: center; gap: 10px; padding: 16px; background: var(--green-pale);
+  border: 1px solid rgba(34,197,94,.35); border-radius: 10px; color: var(--green-light); font-size: .86rem; font-weight: 600;
+}
+.traslape-item { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: .82rem; }
+
+/* ══════════════════════════════════════════════════════════════
+   INFORMES
+   ══════════════════════════════════════════════════════════════ */
+.informe-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.informe-card .ico { font-size: 1.6rem; width: 52px; height: 52px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex: none; }
+.informe-card .txt h4 { font-size: .88rem; margin-bottom: 3px; }
+.informe-card .txt p  { font-size: .76rem; color: var(--text-2); }
+
+/* ══════════════════════════════════════════════════════════════
+   CONFIGURACIÓN
+   ══════════════════════════════════════════════════════════════ */
+.config-card { max-width: 460px; }
+.config-card .campo { margin-bottom: 14px; }
+.config-card .campo label { display: block; font-size: .76rem; color: var(--text-2); margin-bottom: 5px; font-weight: 600; }
+.config-card .campo input { width: 100%; }
+
+/* ══════════════════════════════════════════════════════════════
+   ALERTAS (dropdown de notificaciones)
+   ══════════════════════════════════════════════════════════════ */
+#alertas-panel {
+  position: fixed; top: calc(var(--topbar-h) + 6px); right: 20px; width: 350px; max-height: 480px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5); z-index: 1800; overflow-y: auto; display: none;
+}
+.alerta-item { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: .82rem; cursor: pointer; }
+.alerta-item:hover { background: var(--surface-2); }
+.alerta-sev { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: .68rem; font-weight: 700; }
+.sev-alta  { background: var(--red-pale); color: #fca5a5; }
+.sev-media { background: rgba(245,158,11,.16); color: #fcd34d; }
+.sev-baja  { background: var(--green-pale); color: var(--green-light); }
+.alerta-msg { margin-top: 4px; color: var(--text); }
+.alerta-who { margin-top: 2px; font-size: .74rem; color: var(--text-2); }
+
+/* ══════════════════════════════════════════════════════════════
+   TOAST / MODALES
+   ══════════════════════════════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--green-dark); color: #fff; padding: 10px 22px;
+  border-radius: 99px; font-size: .88rem; font-weight: 500;
+  box-shadow: 0 6px 24px rgba(0,0,0,.5); z-index: 9999;
+  opacity: 0; transition: opacity .25s; pointer-events: none;
+}
+#toast.show { opacity: 1; }
+
+#modal-chatbot, #modal-confirmar {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  z-index: 3000; align-items: center; justify-content: center;
+}
+#modal-chatbot.open, #modal-confirmar.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px;
+  width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.modal-box h3 { margin-bottom: 16px; color: var(--text); }
+.modal-box input, .modal-box textarea { width: 100%; margin-bottom: 12px; }
+.modal-box textarea { resize: vertical; min-height: 80px; }
+.modal-row { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-box p#confirmar-texto { color: var(--text-2); font-size: .88rem; margin-bottom: 18px; line-height: 1.4; }
+
+/* Las casillas no deben heredar el relleno y el borde de los campos de texto */
+input[type=checkbox] { width: auto; padding: 0; accent-color: var(--green); cursor: pointer; }
+
+/* Alto fijo para los lienzos de Chart.js. Sin esto el canvas crece con el
+   ancho de la tarjeta y las barras quedan aplastadas o desproporcionadas. */
+.chart-box { position: relative; height: 300px; }
+.chart-box.alto { height: 380px; }
+
+/* ──────────── EDICIÓN DE POLÍGONO ────────────
+   Barra que aparece sobre el mapa mientras se está moviendo un lindero.
+   Va arriba y centrada para que no tape la leyenda ni el control de capas,
+   y con borde ámbar porque mientras esté visible hay cambios sin guardar. */
+.edicion-barra {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 900; display: none; align-items: center; gap: 14px;
+  background: rgba(20,27,36,.97); border: 1px solid #f59e0b; border-radius: 10px;
+  padding: 10px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+  font-size: .78rem; color: var(--text); max-width: calc(100% - 24px); flex-wrap: wrap;
+}
+.edicion-barra.open { display: flex; }
+.edicion-barra .ed-titulo { font-weight: 600; color: #f59e0b; }
+.edicion-barra .ed-nombre { color: var(--text); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edicion-barra .ed-area   { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.edicion-barra .ed-delta.sube  { color: #22c55e; }
+.edicion-barra .ed-delta.baja  { color: #ef4444; }
+
+/* Aviso de problemas geométricos dentro de la ficha y del panel de capas */
+.diag-item {
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  padding: 7px 9px; margin-bottom: 6px; border-radius: 7px;
+  background: var(--surface-2); border-left: 3px solid var(--border);
+  font-size: .76rem; line-height: 1.35;
+}
+.diag-item.hueco    { border-left-color: #38bdf8; }
+.diag-item.traslape { border-left-color: #f59e0b; }
+.diag-item .diag-ha { color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.diag-vacio { font-size: .76rem; color: #22c55e; }
+
+/* Leyenda flotante sobre el mapa (misma información que la pestaña Capas,
+   pero a la vista mientras se mira el mapa) */
+.map-legend {
+  position: absolute; right: 12px; bottom: 28px; z-index: 500;
+  background: rgba(20,27,36,.94); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; font-size: .72rem; color: var(--text-2);
+}
+.map-legend b { color: var(--text); font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 7px; }
+.map-legend .fila { display: flex; align-items: center; gap: 7px; margin-top: 5px; }
+
+.aviso {
+  background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.35);
+  color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: .8rem; margin-bottom: 16px;
+}
+
+@media (max-width: 560px) { #detail { width: 100%; } }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ TOP BAR ═══════════════════ -->
+<div id="topbar">
+  <div class="brand">
+    <div class="logo">🌐</div>
+    <div class="brand-txt">
+      <h1>Registro Territorial Comunitario</h1>
+      <p>Sistema de Información Geográfica</p>
+    </div>
+  </div>
+
+  <select id="region-selector" onchange="onRegionChange()">
+    <option value="">Todas las regiones</option>
+  </select>
+
+  <nav class="tabs-nav">
+    <button class="tab-btn active" id="tab-dashboard"     onclick="setTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn"        id="tab-mapas"         onclick="setTab('mapas')">🗺️ Mapas</button>
+    <button class="tab-btn"        id="tab-capas"         onclick="setTab('capas')">🗂️ Capas</button>
+    <button class="tab-btn"        id="tab-activos"       onclick="setTab('activos')">📋 Activos</button>
+    <button class="tab-btn"        id="tab-analisis"      onclick="setTab('analisis')">📐 Análisis</button>
+    <button class="tab-btn"        id="tab-informes"      onclick="setTab('informes')">📄 Informes</button>
+    <button class="tab-btn"        id="tab-configuracion" onclick="setTab('configuracion')">⚙️ Configuración</button>
+  </nav>
+
+  <div class="live-pill"><span id="ws-dot"></span><span id="live-label">Sin conexión</span></div>
+
+  <button class="icon-btn" title="Notificaciones" onclick="toggleAlertas()">
+    🔔<span id="badge-alerta"></span>
+  </button>
+
+  <div class="avatar-wrap">
+    <div class="avatar" id="avatar-inicial" onclick="toggleAvatarMenu()">A</div>
+    <div class="dropdown" id="avatar-dropdown">
+      <div class="dropdown-user">
+        <div class="nm" id="dd-nombre">—</div>
+        <div class="rl" id="dd-rol">—</div>
+      </div>
+      <div class="dropdown-item" onclick="toggleAvatarMenu();setTab('configuracion')">⚙️ Configuración</div>
+      <div class="dropdown-item" onclick="abrirChatbot()">💬 Mensaje al chatbot</div>
+      <div class="dropdown-item" onclick="logout()">🚪 Cerrar sesión</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PÁGINAS ═══════════════════ -->
+<div id="app">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page page-pad" id="page-dashboard">
+    <div class="page-title">Panel general</div>
+    <div class="page-sub">Resumen del registro territorial comunitario</div>
+
+    <!-- Aviso que aparece solo si la base todavía no tiene la columna del
+         perímetro (falta correr migrate_perimetro.sql) -->
+    <div class="aviso" id="aviso-perimetro" hidden>
+      ⚠️ La base de datos todavía no tiene la columna del perímetro, así que «Territorio medido», «Con polígono»
+      y el análisis espacial aparecen vacíos. Se corrige aplicando la migración:
+      <code>psql -U postgres -d catastro_etnico -f migrate_perimetro.sql</code>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-lbl">Comunidades</div>
+        <div class="kpi-num" id="kd-comunidades">—</div>
+        <div class="kpi-sub up" id="kd-comunidades-sub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Personas</div>
+        <div class="kpi-num" id="kd-personas">—</div>
+        <div class="kpi-sub" id="kd-personas-sub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Territorio medido</div>
+        <div class="kpi-num" id="kd-territorio">—</div>
+        <div class="kpi-sub">hectáreas con perímetro capturado</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Con polígono</div>
+        <div class="kpi-num" id="kd-poligono">—</div>
+        <div class="kpi-sub" id="kd-poligono-sub">—</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <h3>Comunidades por departamento</h3>
+        <div class="chart-box"><canvas id="chart-depto"></canvas></div>
+        <div class="empty-state" id="chart-depto-empty" style="display:none">Sin datos todavía</div>
+      </div>
+      <div class="card">
+        <h3>Tipo de comunidad</h3>
+        <div class="chart-box"><canvas id="chart-tipo"></canvas></div>
+        <div class="empty-state" id="chart-tipo-empty" style="display:none">Sin datos todavía</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:22px">
+      <h3>Registros en el tiempo</h3>
+      <div class="chart-box"><canvas id="chart-tiempo"></canvas></div>
+      <div class="empty-state" id="chart-tiempo-empty" style="display:none">Sin datos todavía</div>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-card-head">
+        <h3>Últimos territorios registrados</h3>
+        <button class="btn-sm btn-secondary" onclick="setTab('activos')">Ver todos</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="datatable">
+          <thead><tr>
+            <th>Comunidad</th><th>Tipo</th><th>Ubicación</th><th>Personas</th>
+            <th>Área medida</th><th>Perímetro</th><th>Registro</th>
+          </tr></thead>
+          <tbody id="tbody-ultimos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAPAS ── -->
+  <div class="page" id="page-mapas" hidden>
+    <div id="layout">
+      <div id="sidebar">
+        <div class="sb-section">
+          <label>🔍 Búsqueda</label>
+          <input id="f-q" type="search" placeholder="Comunidad, pueblo, municipio…" oninput="buscarMapa()">
+        </div>
+        <div class="sb-section">
+          <label>Filtros</label>
+          <select id="f-tipo" onchange="cargar()"><option value="">Todos los tipos</option></select>
+          <div class="sb-row" style="margin-top:6px">
+            <select id="f-depto" onchange="onDeptoChange()"><option value="">Departamento</option></select>
+          </div>
+          <div class="sb-row" style="margin-top:6px">
+            <select id="f-derecho" onchange="cargar()"><option value="">Tipo de derecho</option></select>
+          </div>
+          <div class="sb-row" style="margin-top:6px">
+            <input id="f-desde" type="date" title="Desde" onchange="cargar()">
+            <input id="f-hasta" type="date" title="Hasta" onchange="cargar()">
+          </div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn-sm btn-primary"   onclick="cargar()">Aplicar</button>
+            <button class="btn-sm btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
+          </div>
+        </div>
+        <div class="sb-section">
+          <label>Vista del mapa</label>
+          <div class="vista-opts">
+            <div class="vista-opt active" onclick="setVistaMap('puntos')"  id="vo-puntos">📍 Puntos</div>
+            <div class="vista-opt"        onclick="setVistaMap('cluster')" id="vo-cluster">🔵 Cluster</div>
+            <div class="vista-opt"        onclick="setVistaMap('calor')"   id="vo-calor">🌡️ Calor</div>
+          </div>
+        </div>
+        <div id="lista-header"><span id="total-label">0 registros</span><span>▼</span></div>
+        <div id="lista-wrapper"></div>
+      </div>
+
+      <div id="map-area">
+        <div class="map-toolbar">
+          <button class="btn-sm btn-secondary" onclick="toggleTimeline()">⏱️ Timeline</button>
+        </div>
+        <div id="map"></div>
+
+        <!-- Barra de edición del lindero (solo visible en modo edición) -->
+        <div class="edicion-barra" id="edicion-barra">
+          <span class="ed-titulo" id="ed-titulo">✏️ Editando el lindero</span>
+          <span class="ed-nombre" id="ed-nombre"></span>
+          <span class="ed-area" id="ed-area">—</span>
+          <span class="ed-delta" id="ed-delta"></span>
+          <div class="btn-row" style="margin:0">
+            <button class="btn-sm btn-secondary" onclick="cancelarEdicionPoligono()">Cancelar</button>
+            <button class="btn-sm btn-primary" onclick="guardarEdicionPoligono()">Guardar lindero</button>
+          </div>
+        </div>
+
+        <div class="map-legend">
+          <b>Leyenda</b>
+          <div class="fila"><span style="width:14px;height:14px;border-radius:3px;flex:none;background:rgba(34,197,94,.18);border:2px solid #16a34a"></span> Territorio colectivo</div>
+          <div class="fila"><span style="width:14px;height:14px;border-radius:3px;flex:none;background:rgba(217,89,38,.2);border:2px dashed #d95926"></span> Parcela familiar</div>
+          <div class="fila"><span style="width:12px;height:12px;border-radius:50%;flex:none;background:#22c55e;border:2px solid #0b0f14"></span> Ubicación registrada</div>
+        </div>
+        <div id="timeline-bar">
+          <label>📅 Período</label>
+          <input id="timeline-slider" type="range" min="0" max="100" value="100" oninput="onTimeline(this.value)">
+          <span id="timeline-val">Todo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CAPAS ── -->
+  <div class="page page-pad" id="page-capas" hidden>
+    <div class="page-title">Capas del mapa</div>
+    <div class="page-sub">Estas capas se aplican sobre el mapa de la pestaña «Mapas»</div>
+
+    <div class="capas-grid">
+      <div class="card">
+        <h3>🎨 Leyenda</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:.8rem;color:var(--text-2)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:15px;height:15px;border-radius:3px;flex:none;background:rgba(34,197,94,.18);border:2px solid #16a34a;display:inline-block"></span>
+            Territorio colectivo (perímetro capturado)
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:15px;height:15px;border-radius:3px;flex:none;background:rgba(217,89,38,.2);border:2px dashed #d95926;display:inline-block"></span>
+            Parcela familiar
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🟩 Perímetros de los territorios</h3>
+        <div style="display:flex;align-items:center;gap:8px;font-size:.82rem">
+          <input type="checkbox" id="chk-perimetros" onchange="toggleTodosPerimetros(this.checked)">
+          <label for="chk-perimetros" style="margin:0;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)">
+            Mostrar todos en el mapa
+          </label>
+        </div>
+        <div style="font-size:.72rem;color:var(--text-2);margin-top:6px">
+          Dibuja de una vez el croquis o el recorrido de todas las comunidades, sin tener que abrir cada ficha.
+        </div>
+        <div id="perimetros-info" style="font-size:.74rem;color:var(--text-2);margin-top:6px"></div>
+      </div>
+
+      <div class="card">
+        <h3>🏠 Parcelas familiares</h3>
+        <div style="display:flex;align-items:center;gap:8px;font-size:.82rem">
+          <input type="checkbox" id="chk-parcelas" onchange="toggleParcelas(this.checked)">
+          <label for="chk-parcelas" style="margin:0;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)">
+            Mostrar en el mapa
+          </label>
+        </div>
+        <div id="parcelas-info" style="font-size:.74rem;color:var(--text-2);margin-top:6px"></div>
+      </div>
+
+      <!-- Solo para administradores: se muestra desde cargarPanelUnion() -->
+      <div class="card" id="card-union" hidden>
+        <h3>🧩 Unir polígonos automáticamente</h3>
+        <div style="font-size:.72rem;color:var(--text-2);margin-bottom:10px">
+          Cierra los vacíos que quedan entre parcelas familiares vecinas y resuelve los traslapes.
+          Nada se guarda sin que primero veas el resultado sobre el mapa.
+        </div>
+
+        <label style="font-size:.7rem">Comunidad</label>
+        <select id="union-comunidad" onchange="diagnosticarComunidad()" style="font-size:.78rem;width:100%;margin-bottom:10px">
+          <option value="">— Seleccione —</option>
+        </select>
+
+        <div id="union-diagnostico" style="margin-bottom:10px"></div>
+
+        <label style="font-size:.7rem">Qué hacer</label>
+        <select id="union-modo" style="font-size:.78rem;width:100%;margin-bottom:8px">
+          <option value="parcelas">Unir las parcelas familiares en un solo territorio</option>
+          <option value="huecos">Solo tapar los vacíos del territorio actual</option>
+          <option value="traslape">Fundir con un territorio vecino traslapado</option>
+        </select>
+
+        <select id="union-vecino" style="font-size:.78rem;width:100%;margin-bottom:8px;display:none"></select>
+
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1">
+            <label style="font-size:.7rem">Tolerancia (m)</label>
+            <input type="number" id="union-tolerancia" value="2" min="0" max="50" step="0.5" style="font-size:.78rem;width:100%">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:.7rem">Vacío mínimo real (ha)</label>
+            <input type="number" id="union-min-hueco" value="0.25" min="0" step="0.05" style="font-size:.78rem;width:100%">
+          </div>
+        </div>
+        <div style="font-size:.68rem;color:var(--text-2);margin-bottom:10px">
+          La tolerancia suelda separaciones de hasta el doble de ese valor. Los vacíos más grandes
+          que el mínimo se conservan: suelen ser exclusiones reales, como una laguna o un predio ajeno.
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-sm btn-secondary" onclick="previsualizarUnion()">Previsualizar</button>
+          <button class="btn-sm btn-primary" id="btn-aplicar-union" onclick="aplicarUnion()" disabled>Guardar unión</button>
+        </div>
+        <div id="union-resultado" style="font-size:.75rem;color:var(--text-2);margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h3>📂 Capa externa (GeoJSON · Shapefile · KML/KMZ)</h3>
+        <input type="file" id="file-geojson" accept=".geojson,.json,.zip,.kml,.kmz" onchange="cargarCapa(event)" style="font-size:.78rem;width:100%">
+        <div style="font-size:.7rem;color:var(--text-2);margin-top:6px">
+          Shapefile: sube el .zip con .shp + .dbf + .shx juntos.
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn-sm btn-secondary" onclick="quitarCapa()">Quitar capa</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🛰️ Capa WMS</h3>
+        <input type="text" id="wms-url" placeholder="URL del servicio WMS" style="font-size:.78rem;margin-bottom:8px;width:100%">
+        <div class="btn-row" style="margin:0 0 8px">
+          <button class="btn-sm btn-secondary" onclick="cargarCapacidadesWMS()">Ver capas disponibles</button>
+        </div>
+        <select id="wms-capas-disponibles" style="font-size:.78rem;margin-bottom:8px;display:none;width:100%"></select>
+        <input type="text" id="wms-layer" placeholder="Nombre de la capa (layers=)" style="font-size:.78rem;width:100%">
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn-sm btn-primary" onclick="agregarCapaWMS()">Agregar capa</button>
+        </div>
+        <div id="wms-lista" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ACTIVOS ── -->
+  <div class="page" id="page-activos" hidden>
+    <div class="page-pad" style="padding-bottom:0">
+      <div class="page-title">Activos</div>
+      <div class="page-sub">Todos los territorios registrados</div>
+    </div>
+    <div class="tabla-card" style="margin:0 26px 26px">
+      <div class="activos-toolbar">
+        <input id="act-buscar" type="search" placeholder="Buscar comunidad, pueblo, municipio…" oninput="buscarActivos()">
+        <button class="btn-sm btn-ghost" onclick="exportar('csv', { q: document.getElementById('act-buscar').value.trim() })">📥 CSV</button>
+        <button class="btn-sm btn-ghost" onclick="exportar('excel', { q: document.getElementById('act-buscar').value.trim() })">📊 Excel</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="datatable">
+          <thead><tr>
+            <th>Comunidad</th><th>Tipo</th><th>Ubicación</th><th>Personas</th>
+            <th>Área medida</th><th>Perímetro</th><th>Registro</th>
+          </tr></thead>
+          <tbody id="tbody-activos"></tbody>
+        </table>
+      </div>
+      <div class="pagina-controles">
+        <button class="btn-sm btn-secondary" onclick="cambiarPaginaActivos(-1)">← Anterior</button>
+        <span id="activos-pag-info">Página 1</span>
+        <button class="btn-sm btn-secondary" onclick="cambiarPaginaActivos(1)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ANÁLISIS ── -->
+  <div class="page page-pad" id="page-analisis" hidden>
+    <div class="page-title">Análisis espacial</div>
+    <div class="page-sub">Área real medida vs. área declarada, y traslapes entre territorios vecinos</div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Área real medida vs. área declarada (hectáreas)</h3>
+      <div class="chart-box alto"><canvas id="chart-areas"></canvas></div>
+      <div class="empty-state" id="chart-areas-empty" style="display:none">Todavía no hay territorios con perímetro capturado para comparar.</div>
+    </div>
+
+    <div class="tabla-card" style="margin-bottom:16px">
+      <div class="tabla-card-head"><h3>Detalle por territorio</h3></div>
+      <div style="overflow-x:auto">
+        <table class="datatable">
+          <thead><tr>
+            <th>Comunidad</th><th>Municipio</th><th>Método</th><th>Declarada (ha)</th>
+            <th>Medida (ha)</th><th>Lindero</th><th>Diferencia</th>
+          </tr></thead>
+          <tbody id="tbody-analisis"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Traslapes entre territorios vecinos</h3>
+      <div id="traslapes-contenido"></div>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-card-head"><h3>Distribución territorial por municipio</h3></div>
+      <div style="overflow-x:auto">
+        <table class="datatable">
+          <thead><tr>
+            <th>Departamento</th><th>Municipio</th><th>Comunidades</th><th>Personas</th>
+          </tr></thead>
+          <tbody id="tbody-densidad"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INFORMES ── -->
+  <div class="page page-pad" id="page-informes" hidden>
+    <div class="page-title">Informes</div>
+    <div class="page-sub">Exporta los registros con los filtros que tengas activos en «Mapas»</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px">
+      <div class="informe-card">
+        <div class="ico">📥</div>
+        <div class="txt"><h4>CSV</h4><p>Tabla de registros en texto plano</p></div>
+        <button class="btn-sm btn-primary" style="margin-left:auto" onclick="exportar('csv')">Exportar</button>
+      </div>
+      <div class="informe-card">
+        <div class="ico">📊</div>
+        <div class="txt"><h4>Excel</h4><p>Libro con hoja de resumen incluida</p></div>
+        <button class="btn-sm btn-primary" style="margin-left:auto" onclick="exportar('excel')">Exportar</button>
+      </div>
+      <div class="informe-card">
+        <div class="ico">📄</div>
+        <div class="txt"><h4>PDF</h4><p>Reporte con mapa, gráficas y tabla</p></div>
+        <button class="btn-sm btn-primary" style="margin-left:auto" onclick="exportar('pdf')">Exportar</button>
+      </div>
+    </div>
+
+    <!-- Plancha cartográfica: un documento por comunidad, no un informe de toda la base -->
+    <div class="tabla-card" style="margin-bottom:24px">
+      <div class="tabla-card-head"><h3>🗺️ Plancha cartográfica de una comunidad</h3></div>
+      <div style="padding:14px 16px">
+        <p style="font-size:.78rem;color:var(--text-2);margin:0 0 12px;line-height:1.55;max-width:70ch">
+          Documento de una sola comunidad, con el lindero dibujado sobre retícula de coordenadas,
+          el encabezado de identificación catastral, la ficha completa del registro, las superficies
+          medidas y el cuadro de coordenadas de cada vértice.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <select id="plancha-comunidad" style="font-size:.8rem;min-width:260px;flex:1;max-width:380px">
+            <option value="">— Elige qué consultar —</option>
+          </select>
+          <button class="btn-sm btn-primary" id="btn-plancha-predio" onclick="descargarPlanchaDesdeInformes('predio')">
+            📐 Modalidad predio
+          </button>
+          <button class="btn-sm btn-primary" id="btn-plancha-territorio" onclick="descargarPlanchaDesdeInformes('territorio')">
+            🌎 Modalidad territorio
+          </button>
+          <button class="btn-sm btn-primary" id="btn-plancha-parcela" style="display:none" onclick="descargarPlanchaDesdeInformes('parcela')">
+            🏠 Plancha de la parcela
+          </button>
+        </div>
+        <div id="plancha-ayuda" style="font-size:.72rem;color:var(--text-2);margin-top:10px;line-height:1.5">
+          <b style="color:var(--text)">Predio:</b> el predio colectivo al centro y los predios
+          colindantes alrededor, rotulados con su interesado.
+          <b style="color:var(--text);margin-left:8px">Territorio:</b> el territorio completo con
+          todas las parcelas familiares dibujadas dentro y el consolidado de hogares y superficies.
+        </div>
+      </div>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-card-head"><h3>🔔 Alertas de calidad de datos</h3></div>
+      <div id="informes-alertas"></div>
+    </div>
+
+    <div class="tabla-card" style="margin-top:20px">
+      <div class="tabla-card-head"><h3>📲 Validación comunitaria</h3></div>
+      <div id="informes-validaciones"></div>
+    </div>
+  </div>
+
+  <!-- ── CONFIGURACIÓN ── -->
+  <div class="page page-pad" id="page-configuracion" hidden>
+    <div class="page-title">Configuración</div>
+    <div class="page-sub">Tu cuenta en el geovisor</div>
+
+    <div class="card config-card" style="margin-bottom:16px">
+      <h3>Cuenta</h3>
+      <div class="detail-row"><span class="lbl">Nombre</span><span class="val" id="cfg-nombre">—</span></div>
+      <div class="detail-row"><span class="lbl">Usuario</span><span class="val" id="cfg-usuario">—</span></div>
+      <div class="detail-row"><span class="lbl">Rol</span><span class="val" id="cfg-rol">—</span></div>
+    </div>
+
+    <div class="card config-card">
+      <h3>Cambiar contraseña</h3>
+      <div class="campo"><label>Contraseña actual</label><input id="cfg-pass-actual" type="password"></div>
+      <div class="campo"><label>Contraseña nueva</label><input id="cfg-pass-nueva" type="password"></div>
+      <button class="btn-sm btn-primary" onclick="cambiarPassword()">Actualizar contraseña</button>
+    </div>
+
+    <!-- Gestión de usuarios: solo para administradores -->
+    <div class="tabla-card" id="card-usuarios" hidden style="margin-top:16px">
+      <div class="tabla-card-head">
+        <h3>👥 Usuarios del visor</h3>
+        <button class="btn-sm btn-primary" onclick="toggleFormUsuario()">+ Nuevo usuario</button>
+      </div>
+      <div id="form-nuevo-usuario" hidden style="padding:16px 20px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+        <div><label style="display:block;font-size:.72rem;color:var(--text-2);margin-bottom:4px">Usuario</label><input id="nu-username" style="width:100%"></div>
+        <div><label style="display:block;font-size:.72rem;color:var(--text-2);margin-bottom:4px">Nombre</label><input id="nu-nombre" style="width:100%"></div>
+        <div><label style="display:block;font-size:.72rem;color:var(--text-2);margin-bottom:4px">Contraseña</label><input id="nu-password" type="password" style="width:100%"></div>
+        <div><label style="display:block;font-size:.72rem;color:var(--text-2);margin-bottom:4px">Rol</label>
+          <select id="nu-rol" style="width:100%"><option value="viewer">Consulta</option><option value="admin">Administrador</option></select>
+        </div>
+        <div class="btn-row">
+          <button class="btn-sm btn-primary" onclick="crearUsuario()">Crear</button>
+          <button class="btn-sm btn-secondary" onclick="toggleFormUsuario()">Cancelar</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="datatable">
+          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead>
+          <tbody id="tbody-usuarios"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ── DETAIL PANEL ── -->
+<div id="detail">
+  <div id="detail-header">
+    <span>🏡</span>
+    <h3 id="detail-title">Registro</h3>
+    <button id="detail-close" onclick="cerrarDetalle()">✕</button>
+  </div>
+  <div id="detail-body"></div>
+</div>
+
+<!-- ── ALERTAS (notificaciones) ── -->
+<div id="alertas-panel"></div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<!-- ── MODAL CHATBOT ── -->
+<div id="modal-chatbot">
+  <div class="modal-box">
+    <h3>💬 Enviar mensaje al chatbot</h3>
+    <input id="cb-numero" type="tel" placeholder="Número WhatsApp (ej: 573001234567)">
+    <textarea id="cb-msg" placeholder="Mensaje a enviar…"></textarea>
+    <div class="modal-row">
+      <button class="btn-sm btn-secondary" onclick="cerrarChatbot()">Cancelar</button>
+      <button class="btn-sm btn-primary"   onclick="enviarChatbot()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CONFIRMAR ── -->
+<div id="modal-confirmar">
+  <div class="modal-box">
+    <h3 id="confirmar-titulo">¿Eliminar?</h3>
+    <p id="confirmar-texto"></p>
+    <div class="modal-row">
+      <button class="btn-sm btn-secondary" onclick="cerrarConfirmar()">Cancelar</button>
+      <button class="btn-sm btn-danger" id="confirmar-aceptar" onclick="ejecutarConfirmacion()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="foto-lightbox" onclick="if(event.target===this)cerrarFoto()">
+  <button class="cerrar" onclick="cerrarFoto()" aria-label="Cerrar">&times;</button>
+  <img id="lightbox-img" alt="Fotografía del registro">
+  <div class="pie" id="lightbox-pie"></div>
+</div>
+
+<!-- ═══════════════════ SCRIPTS CDN ═══════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<!-- Edición de vértices sobre el mapa (solo se activa para el rol admin) -->
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/shpjs@4.0.4/dist/shp.js"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+
+<script>
+/* ──────────────── AUTH GUARD ──────────────── */
+const TOKEN = localStorage.getItem('geo_token')
+const USER  = JSON.parse(localStorage.getItem('geo_user') || 'null')
+if (!TOKEN || !USER) { window.location.href = '/login'; throw 0 }
+
+document.getElementById('avatar-inicial').textContent = (USER.nombre || USER.username || '?').charAt(0).toUpperCase()
+document.getElementById('dd-nombre').textContent = USER.nombre || USER.username
+document.getElementById('dd-rol').textContent    = USER.rol || ''
+
+function logout() {
+  localStorage.removeItem('geo_token')
+  localStorage.removeItem('geo_user')
+  window.location.href = '/login'
+}
+
+function toggleAvatarMenu() {
+  document.getElementById('avatar-dropdown').classList.toggle('open')
+}
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.avatar-wrap')
+  if (wrap && !wrap.contains(e.target)) document.getElementById('avatar-dropdown').classList.remove('open')
+})
+
+const h = () => ({ 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' })
+const api = async (url, opts = {}) => {
+  try {
+    const r = await fetch(url, { headers: h(), ...opts })
+    if (r.status === 401) { logout(); return }
+    return await r.json()
+  } catch (err) {
+    // Servidor caído o respuesta que no es JSON: se avisa y se devuelve
+    // undefined, que es lo que todas las pantallas ya saben manejar.
+    console.error('Error consultando', url, err)
+    toast('No se pudo consultar el servidor', true)
+    return
+  }
+}
+
+/* Región activa (el selector del encabezado). Se manda como filtro de
+   departamento a todas las consultas, para que el panel, el mapa, los
+   activos y el análisis muestren siempre la misma región. */
+const regionActual = () => document.getElementById('region-selector').value
+const conRegion = (params = new URLSearchParams()) => {
+  const d = regionActual()
+  if (d) params.set('depto', d)
+  return params
+}
+
+/* Debounce real: la función se crea UNA sola vez. Antes se escribía
+   debounce(cargar,400)() en el oninput, que construía una función nueva en
+   cada tecla y disparaba una consulta por pulsación — el retardo no servía
+   de nada. */
+const buscarMapa    = debounce(() => cargar(), 400)
+const buscarActivos = debounce(() => cargarActivos(1), 400)
+
+/* ──────────────── PESTAÑAS ──────────────── */
+const PAGINAS = ['dashboard','mapas','capas','activos','analisis','informes','configuracion']
+let tabActual = 'dashboard'
+
+function setTab(tab) {
+  if (!PAGINAS.includes(tab)) return
+  tabActual = tab
+  PAGINAS.forEach(p => {
+    document.getElementById(`page-${p}`).hidden = p !== tab
+    document.getElementById(`tab-${p}`).classList.toggle('active', p === tab)
+  })
+  if (tab === 'mapas')  requestAnimationFrame(() => map.invalidateSize())
+  if (tab === 'capas')         cargarPanelUnion()
+  if (tab === 'dashboard')     cargarDashboard()
+  if (tab === 'activos')       cargarActivos(1)
+  if (tab === 'analisis')      cargarAnalisis()
+  if (tab === 'informes')    { cargarAlertasInformes(); cargarSelectorPlancha(); cargarValidacionesPendientes() }
+  if (tab === 'configuracion') cargarConfiguracion()
+}
+
+/* ──────────────── MAPA ──────────────── */
+const map = L.map('map', { center: [4.5, -74.0], zoom: 6 })
+
+const baseLayers = {
+  'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19 }),
+  'Satélite ESRI': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri', maxZoom: 19 }),
+  'Topo OSM': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenTopoMap', maxZoom: 17 }),
+}
+baseLayers['OpenStreetMap'].addTo(map)
+const overlayLayers = {}
+const layersControl = L.control.layers(baseLayers, overlayLayers, { position: 'topright' }).addTo(map)
+L.control.scale({ imperial: false }).addTo(map)
+
+/* ──────────────── CAPAS DE DATOS ──────────────── */
+let puntoLayer   = L.layerGroup().addTo(map)
+let clusterLayer = L.markerClusterGroup()
+let heatLayer    = null
+let geojsonCapa  = null
+let vistaMap     = 'cluster'
+let rawData      = []
+let detalleActualId = null
+let detalleCoords   = null   // punto de la ficha abierta, para "Ver en el mapa"
+let capaTerritorioDetalle = null
+let timelineData = []
+
+const iconoColor = tipo => {
+  const colores = {
+    Resguardo_Indigena: '#22c55e', Comunidad_Negra: '#f59e0b',
+    Cabildo: '#3b82f6', Parcialidad: '#ec4899', Territorio_Colectivo: '#a78bfa',
+  }
+  const c = colores[tipo] || '#8b96a5'
+  return L.divIcon({
+    className: '', iconSize: [16, 16], iconAnchor: [8, 8],
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${c};border:2px solid #0b0f14;box-shadow:0 1px 4px rgba(0,0,0,.6)"></div>`
+  })
+}
+
+function renderizarMapa(features) {
+  map.removeLayer(puntoLayer)
+  map.removeLayer(clusterLayer)
+  if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null }
+
+  puntoLayer   = L.layerGroup()
+  clusterLayer = L.markerClusterGroup({ maxClusterRadius: 60 })
+
+  const heatPts = []
+
+  features.forEach(f => {
+    const p  = f.properties
+    const ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]
+    // El mapa de calor pesa por población: antes todos los puntos valían 1
+    // y una comunidad de 700 personas se veía igual que una de 12.
+    heatPts.push([...ll, Math.max(1, +p.personas || 1)])
+
+    const marker = L.marker(ll, { icon: iconoColor(p.tipo) })
+    marker.bindPopup(popupHTML(p), { maxWidth: 280 })
+    marker.on('click', () => mostrarDetalle(p.id))
+
+    puntoLayer.addLayer(marker)
+    clusterLayer.addLayer(L.marker(ll, { icon: iconoColor(p.tipo) }).bindPopup(popupHTML(p)).on('click', () => mostrarDetalle(p.id)))
+  })
+
+  if (vistaMap === 'puntos')  { map.addLayer(puntoLayer); }
+  if (vistaMap === 'cluster') { map.addLayer(clusterLayer); }
+  if (vistaMap === 'calor') {
+    // max = la población más alta del conjunto; sin esto leaflet.heat toma
+    // 1.0 como máximo y cualquier comunidad satura el color.
+    const maxPeso = heatPts.length ? Math.max(...heatPts.map(p => p[2])) : 1
+    heatLayer = L.heatLayer(heatPts, { radius: 35, blur: 25, maxZoom: 14, max: maxPeso,
+      gradient: { 0.2: '#4ade80', 0.5: '#facc15', 0.8: '#f97316', 1: '#ef4444' }
+    }).addTo(map)
+  }
+
+  if (features.length > 0 && vistaMap !== 'calor') {
+    const bounds = L.latLngBounds(features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]))
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] })
+  }
+}
+
+/* ──────────────── PERÍMETROS DE TODOS LOS TERRITORIOS ────────────────
+   Hasta ahora el polígono de un territorio solo se veía abriendo su ficha,
+   uno por uno. Dibujarlos todos juntos es lo que permite ver de un vistazo
+   si dos territorios se tocan o si alguno quedó mal trazado.
+   Usa /api/capas, que ya devolvía puntos y polígonos en una sola llamada
+   pero que ninguna pantalla estaba consumiendo. */
+let capaPerimetros = null
+
+async function toggleTodosPerimetros(mostrar) {
+  const info = document.getElementById('perimetros-info')
+  const casilla = document.getElementById('chk-perimetros')
+
+  if (!mostrar) {
+    if (capaPerimetros) { map.removeLayer(capaPerimetros); capaPerimetros = null }
+    info.textContent = ''
+    return
+  }
+
+  info.textContent = 'Cargando…'
+  const data = await api('/api/capas?' + conRegion())
+  if (!data || !data.poligonos) {
+    info.textContent = 'No se pudieron cargar los perímetros (¿falta migrate_perimetro.sql?).'
+    casilla.checked = false
+    return
+  }
+
+  const feats = data.poligonos.features || []
+  if (!feats.length) {
+    info.textContent = 'Todavía ninguna comunidad tiene el perímetro capturado.'
+    casilla.checked = false
+    return
+  }
+
+  if (capaPerimetros) map.removeLayer(capaPerimetros)
+  capaPerimetros = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+    style: { color: '#22c55e', weight: 2, opacity: .9, fillColor: '#22c55e', fillOpacity: .12 },
+    onEachFeature: (f, layer) => {
+      const p = f.properties
+      layer.bindPopup(`
+        <div style="font-size:.85rem;line-height:1.5">
+          <b>${p.nombre}</b><br>
+          <span style="color:#6b7280">${String(p.tipo || '').replace(/_/g,' ')}</span><br>
+          📐 ${p.area_real ? (+p.area_real).toFixed(2) + ' ha medidas' : 'sin medir'}${p.area_declarada ? ` · ${(+p.area_declarada).toLocaleString('es-CO')} ha declaradas` : ''}<br>
+          📏 ${p.perimetro_km ? (+p.perimetro_km).toFixed(2) + ' km de lindero' : '—'}<br>
+          <a href="#" onclick="mostrarDetalle(${p.id});return false" style="color:#22c55e;font-weight:600">Ver detalle →</a>
+        </div>`, { maxWidth: 280 })
+    },
+  }).addTo(map)
+
+  const ha = feats.reduce((s, f) => s + (+f.properties.area_real || 0), 0)
+  info.textContent = `${feats.length} territorio(s) dibujado(s) · ${ha.toFixed(1)} ha medidas`
+  if (tabActual === 'mapas') {
+    try { map.fitBounds(capaPerimetros.getBounds(), { padding: [30, 30] }) } catch {}
+  }
+}
+
+/* ──────────────── PARCELAS FAMILIARES ──────────────── */
+let capaParcelas = null
+
+async function toggleParcelas(mostrar) {
+  const info = document.getElementById('parcelas-info')
+  if (!mostrar) {
+    if (capaParcelas) { map.removeLayer(capaParcelas); capaParcelas = null }
+    info.textContent = ''
+    return
+  }
+  info.textContent = 'Cargando…'
+  const data = await api('/api/parcelas')
+  if (!data) { info.textContent = ''; return }
+
+  const feats = data.poligonos.features
+  if (!feats.length) {
+    info.textContent = 'Todavía no hay parcelas familiares registradas.'
+    document.getElementById('chk-parcelas').checked = false
+    return
+  }
+
+  capaParcelas = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+    style: { color: '#d95926', weight: 1.5, opacity: .9, fillColor: '#d95926', fillOpacity: .18, dashArray: '4 3' },
+    onEachFeature: (f, layer) => {
+      const p = f.properties
+      const nombreSeguroParcela = String(p.familia || p.jefe_hogar || 'parcela').replace(/'/g, "\\'")
+      layer.bindPopup(`
+        <div style="font-size:.85rem;line-height:1.5">
+          <b>${p.familia || p.jefe_hogar || 'Parcela familiar'}</b><br>
+          <span style="color:#6b7280">dentro de ${p.comunidad}</span><br>
+          👥 ${p.personas ?? '?'} personas${p.mujeres != null ? ` (${p.mujeres} M / ${p.hombres} H)` : ''}<br>
+          📐 ${p.area_real ? (+p.area_real).toFixed(2) + ' ha' : 'sin medir'}<br>
+          ⚖️ ${String(p.derecho || '').replace(/_/g, ' ')}
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+            <a href="#" onclick="descargarPlancha('parcela', ${p.id}, '${nombreSeguroParcela}');return false"
+               style="color:#1d4ed8;font-weight:600;text-decoration:none">📐 Plancha de esta parcela (PDF)</a>
+            ${USER.rol === 'admin' ? `<a href="#" onclick="editarParcela(${p.id});return false"
+               style="color:#b45309;font-weight:600;text-decoration:none">✏️ Corregir el lindero</a>` : ''}
+          </div>
+        </div>`, { maxWidth: 270 })
+    },
+  }).addTo(map)
+
+  const personas = feats.reduce((s, f) => s + (+f.properties.personas || 0), 0)
+  info.textContent = `${feats.length} parcelas · ${personas} personas`
+}
+
+/* ════════════════════════════════════════════════════════════
+   EDICIÓN DEL LINDERO Y UNIÓN AUTOMÁTICA  (solo rol admin)
+   ════════════════════════════════════════════════════════════
+
+   Dos cosas que hasta ahora no se podían arreglar desde el visor:
+
+     · el lindero quedó torcido — un vértice mal tomado con el GPS, una
+       esquina que la comunidad dibujó de memoria. Ahora se arrastra el
+       vértice sobre el mapa y se guarda.
+
+     · huecos y traslapes — al juntar las parcelas familiares quedan
+       franjas vacías entre una y otra, y a veces dos parcelas (o dos
+       territorios vecinos) se montan. La unión automática suelda esas
+       franjas y funde los traslapes.
+
+   Todo cambio queda en la bitácora del servidor con su geometría
+   anterior, así que siempre se puede volver atrás.
+──────────────────────────────────────────────────────────── */
+
+/* Escapa texto que viene de la base antes de meterlo en HTML. El escTexto() que
+   ya existía vive dentro de cargarUsuarios() y solo escapa comillas para
+   atributos onclick; aquí hace falta uno global y para contenido. */
+const escTexto = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+let edicionActiva   = null   // { comunidadId, capa, areaOriginal, nombre }
+let capaPreviaUnion = null   // resultado previsualizado de la unión
+let unionPendiente  = null   // { comunidadId, modo, params } listo para guardar
+
+const esAdmin = () => USER.rol === 'admin'
+
+/* Área geodésica en hectáreas de un anillo de coordenadas [lng,lat].
+   Fórmula del exceso esférico: sirve para el número que se ve mientras se
+   arrastra un vértice. El área que queda guardada la calcula PostGIS sobre
+   el elipsoide, que es la buena; esta es solo la de la vista previa. */
+function areaHaAnillo(coords) {
+  const R = 6378137
+  let total = 0
+  for (let i = 0, n = coords.length; i < n; i++) {
+    const [x1, y1] = coords[i]
+    const [x2, y2] = coords[(i + 1) % n]
+    total += (x2 - x1) * Math.PI / 180 *
+             (2 + Math.sin(y1 * Math.PI / 180) + Math.sin(y2 * Math.PI / 180))
+  }
+  return Math.abs(total * R * R / 2) / 10000
+}
+
+function areaHaGeoJSON(geom) {
+  if (!geom) return 0
+  const polis = geom.type === 'MultiPolygon' ? geom.coordinates : [geom.coordinates]
+  // Cada polígono aporta su anillo exterior y resta sus huecos.
+  return polis.reduce((suma, anillos) =>
+    suma + anillos.reduce((a, anillo, i) => a + (i === 0 ? areaHaAnillo(anillo) : -areaHaAnillo(anillo)), 0), 0)
+}
+
+/* ──────────── EDITAR EL LINDERO EN EL MAPA ──────────── */
+/* Abre el modo edición sobre una geometría cualquiera. Se usa para los dos
+   niveles de tenencia, porque corregir un lindero es el mismo gesto en los
+   dos casos; lo único que cambia es a qué ruta se guarda:
+
+     territorio → PUT /api/comunidad/:comunidadId/poligono
+     parcela    → PUT /api/predio/:predioId/poligono                      */
+function abrirEdicionLindero({ geometria, ruta, nombre, tipo }) {
+  if (!esAdmin()) return
+  if (!geometria) { toast('Este lindero todavía no está dibujado', true); return }
+  if (edicionActiva) { toast('Ya hay una edición abierta. Guárdala o cancélala primero', true); return }
+
+  setTab('mapas')
+  map.closePopup()
+
+  // Capa propia del modo edición, independiente de la ficha y de la capa de
+  // parcelas: si se editara la capa original, recargar cualquiera de las dos
+  // dejaría a Geoman trabajando sobre una capa que ya no está en el mapa.
+  const grupo = L.geoJSON(geometria).addTo(map)
+  const capa  = grupo.getLayers()[0]
+  if (!capa || !capa.pm) { map.removeLayer(grupo); toast('No se pudo abrir la edición del lindero', true); return }
+
+  edicionActiva = {
+    ruta, capa, grupo, nombre, tipo,
+    areaOriginal: areaHaGeoJSON(geometria),
+    original: geometria,
+  }
+
+  capa.setStyle({ color: '#f59e0b', weight: 3, fillColor: '#f59e0b', fillOpacity: .12, dashArray: '6 4' })
+  capa.pm.enable({ allowSelfIntersection: false, snappable: true, snapDistance: 12 })
+  capa.on('pm:markerdragend pm:vertexadded pm:vertexremoved', refrescarAreaEdicion)
+
+  document.getElementById('ed-titulo').textContent =
+    tipo === 'parcela' ? '✏️ Editando la parcela' : '✏️ Editando el lindero'
+  document.getElementById('ed-nombre').textContent = nombre || ''
+  document.getElementById('edicion-barra').classList.add('open')
+  refrescarAreaEdicion()
+  setTimeout(() => { try { map.fitBounds(capa.getBounds(), { padding: [60, 60] }) } catch {} }, 180)
+  toast('Arrastra los vértices para corregir el lindero')
+}
+
+/* Desde la ficha del territorio */
+function editarPoligono(comunidadId, nombre) {
+  if (!capaTerritorioDetalle) { toast('Este territorio todavía no tiene polígono dibujado', true); return }
+
+  // La geometría se copia ANTES de cerrar la ficha: cerrarDetalle() quita
+  // del mapa la capa del territorio.
+  const original = capaTerritorioDetalle.toGeoJSON().features[0]?.geometry
+  if (!original) { toast('No se pudo leer el lindero de este territorio', true); return }
+
+  cerrarDetalle()
+  abrirEdicionLindero({
+    geometria: original,
+    ruta:      `/api/comunidad/${comunidadId}/poligono`,
+    nombre,
+    tipo:      'territorio',
+  })
+  edicionActiva && (edicionActiva.comunidadId = comunidadId)
+}
+
+/* Desde el popup de una parcela familiar en el mapa */
+function editarParcela(predioId) {
+  if (!esAdmin()) return
+  if (!capaParcelas) { toast('Activa la capa de parcelas familiares', true); return }
+
+  // La geometría se toma de la capa que ya está en pantalla: es la misma
+  // que vino del servidor, así que no hace falta volver a pedirla.
+  let geometria = null, etiqueta = ''
+  capaParcelas.eachLayer(l => {
+    const f = l.feature
+    if (f && +f.properties.id === +predioId) {
+      geometria = f.geometry
+      etiqueta  = f.properties.familia || f.properties.jefe_hogar || 'Parcela familiar'
+    }
+  })
+  if (!geometria) { toast('No se encontró el lindero de esa parcela', true); return }
+
+  abrirEdicionLindero({
+    geometria,
+    ruta:   `/api/predio/${predioId}/poligono`,
+    nombre: etiqueta,
+    tipo:   'parcela',
+  })
+}
+
+function refrescarAreaEdicion() {
+  if (!edicionActiva) return
+  const area  = areaHaGeoJSON(edicionActiva.capa.toGeoJSON().geometry)
+  const delta = area - edicionActiva.areaOriginal
+
+  document.getElementById('ed-area').textContent = `${area.toFixed(2)} ha`
+  const el = document.getElementById('ed-delta')
+  el.textContent = Math.abs(delta) < 0.005 ? 'sin cambio de área'
+                 : `${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)} ha`
+  el.className = 'ed-delta ' + (Math.abs(delta) < 0.005 ? '' : delta > 0 ? 'sube' : 'baja')
+}
+
+function cerrarModoEdicion() {
+  if (!edicionActiva) return
+  try { edicionActiva.capa.pm.disable() } catch {}
+  try { map.removeLayer(edicionActiva.grupo) } catch {}
+  edicionActiva = null
+  document.getElementById('edicion-barra').classList.remove('open')
+}
+
+function cancelarEdicionPoligono() {
+  if (!edicionActiva) return
+  const { comunidadId, tipo } = edicionActiva
+  cerrarModoEdicion()
+
+  // Se redibuja desde lo que está guardado, para descartar cualquier
+  // vértice que se hubiera movido sin guardar.
+  if (tipo === 'parcela' && document.getElementById('chk-parcelas')?.checked) toggleParcelas(true)
+  // Se vuelve a la ficha desde la que se entró, si se entró desde una.
+  if (comunidadId) mostrarDetalle(comunidadId)
+  toast('Edición cancelada, el lindero quedó como estaba')
+}
+
+async function guardarEdicionPoligono() {
+  if (!edicionActiva) return
+  const { ruta, comunidadId, capa, nombre, areaOriginal, tipo } = edicionActiva
+  const geometria = capa.toGeoJSON().geometry
+  const area      = areaHaGeoJSON(geometria)
+  const delta     = area - areaOriginal
+  const queEs     = tipo === 'parcela' ? 'La parcela' : 'El lindero'
+  const deQuien   = nombre || (tipo === 'parcela' ? 'esta parcela' : 'este territorio')
+
+  const resumen = Math.abs(delta) < 0.005
+    ? `${queEs} de ${deQuien} cambia de forma sin cambiar el área.`
+    : `${queEs} de ${deQuien} pasa de ${areaOriginal.toFixed(2)} ha a ${area.toFixed(2)} ha (${delta > 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)} ha).`
+
+  pedirConfirmacion('¿Guardar el lindero corregido?',
+    `${resumen} Pasará a ser la geometría oficial y quedará registrado a tu nombre.`,
+    async () => {
+    const r = await api(ruta, {
+      method: 'PUT',
+      body: JSON.stringify({
+        geometria,
+        motivo: `Corrección del lindero (${tipo || 'territorio'}) desde el geovisor`,
+      }),
+    })
+    if (!r || r.error) { toast(r?.error || 'No se pudo guardar', true); return }
+
+    cerrarModoEdicion()
+    toast(`Lindero guardado · ${(+r.area_nueva_ha).toFixed(2)} ha`)
+
+    // El área, el lindero y la topología LADM ya cambiaron en la base:
+    // se recargan las capas para que el mapa no siga mostrando lo viejo.
+    if (document.getElementById('chk-perimetros')?.checked) toggleTodosPerimetros(true)
+    if (document.getElementById('chk-parcelas')?.checked)   toggleParcelas(true)
+    // Se vuelve a la ficha con los datos ya recalculados (el área de la
+    // parcela cambió, y con ella el total repartido del territorio).
+    if (comunidadId) mostrarDetalle(comunidadId)
+  }, { aceptar: 'Guardar lindero', clase: 'btn-primary' })
+}
+
+/* ──────────── UNIÓN AUTOMÁTICA ──────────── */
+async function cargarPanelUnion() {
+  const card = document.getElementById('card-union')
+  if (!card) return
+  card.hidden = !esAdmin()
+  if (!esAdmin()) return
+
+  const data = await api('/api/registros?limit=100')
+  if (!data || !data.data) return
+
+  const sel = document.getElementById('union-comunidad')
+  sel.innerHTML = '<option value="">— Seleccione —</option>' +
+    data.data.map(r => `<option value="${r.id}">${escTexto(r.nombre_comunidad || 'Sin nombre')}</option>`).join('')
+
+  document.getElementById('union-modo').onchange = e => {
+    document.getElementById('union-vecino').style.display = e.target.value === 'traslape' ? '' : 'none'
+  }
+}
+
+async function diagnosticarComunidad() {
+  const id  = document.getElementById('union-comunidad').value
+  const caja = document.getElementById('union-diagnostico')
+  limpiarPreviaUnion()
+  document.getElementById('union-resultado').textContent = ''
+  if (!id) { caja.innerHTML = ''; return }
+
+  caja.innerHTML = '<div style="font-size:.76rem;color:var(--text-2)">Analizando la geometría…</div>'
+  const d = await api(`/api/comunidad/${id}/diagnostico`)
+  if (!d || d.error) { caja.innerHTML = `<div class="diag-vacio" style="color:#ef4444">${escTexto(d?.error || 'No se pudo analizar')}</div>`; return }
+
+  if (!d.total) {
+    caja.innerHTML = '<div class="diag-vacio">✅ Sin huecos ni traslapes detectados.</div>'
+  } else {
+    caja.innerHTML = d.problemas.slice(0, 8).map(p => `
+      <div class="diag-item ${p.tipo === 'hueco_entre_parcelas' ? 'hueco' : 'traslape'}">
+        <span>${p.tipo === 'hueco_entre_parcelas' ? '🕳️' : '⚠️'} ${escTexto(p.descripcion)}</span>
+        <span class="diag-ha">${(+p.hectareas).toFixed(2)} ha</span>
+      </div>`).join('') +
+      (d.total > 8 ? `<div style="font-size:.72rem;color:var(--text-2)">y ${d.total - 8} más…</div>` : '')
+  }
+
+  // Los vecinos traslapados son los candidatos del modo "fundir con vecino".
+  const vecinos = (d.problemas || []).filter(p => p.tipo === 'traslape_vecino')
+  const selV = document.getElementById('union-vecino')
+  selV.innerHTML = vecinos.length
+    ? vecinos.map(v => `<option value="${v.comunidad_b}">${escTexto(String(v.descripcion).replace('Se superpone con el territorio de ', ''))} · ${(+v.hectareas).toFixed(2)} ha</option>`).join('')
+    : '<option value="">Sin vecinos traslapados</option>'
+
+  // Se pintan los problemas sobre el mapa para poder mirarlos.
+  const feats = (d.problemas || []).filter(p => p.geometria)
+    .map(p => ({ type: 'Feature', geometry: p.geometria, properties: p }))
+  if (feats.length) {
+    capaPreviaUnion = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+      style: f => f.properties.tipo === 'hueco_entre_parcelas'
+        ? { color: '#38bdf8', weight: 2, fillColor: '#38bdf8', fillOpacity: .35 }
+        : { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: .35 },
+      onEachFeature: (f, l) => l.bindPopup(
+        `<b>${f.properties.tipo === 'hueco_entre_parcelas' ? 'Vacío entre parcelas' : 'Traslape'}</b><br>${escTexto(f.properties.descripcion)}<br>${(+f.properties.hectareas).toFixed(3)} ha`),
+    }).addTo(map)
+  }
+}
+
+function limpiarPreviaUnion() {
+  if (capaPreviaUnion) { map.removeLayer(capaPreviaUnion); capaPreviaUnion = null }
+  unionPendiente = null
+  const btn = document.getElementById('btn-aplicar-union')
+  if (btn) btn.disabled = true
+}
+
+function paramsUnion() {
+  const id = document.getElementById('union-comunidad').value
+  if (!id) { toast('Elige primero una comunidad', true); return null }
+  const modo = document.getElementById('union-modo').value
+  const body = {
+    modo,
+    tolerancia_m: +document.getElementById('union-tolerancia').value || 0,
+    min_hueco_ha: +document.getElementById('union-min-hueco').value || 0,
+  }
+  if (modo === 'traslape') {
+    const v = document.getElementById('union-vecino').value
+    if (!v) { toast('No hay un territorio vecino traslapado con este', true); return null }
+    body.vecino_id = +v
+  }
+  return { id, body }
+}
+
+async function previsualizarUnion() {
+  const p = paramsUnion()
+  if (!p) return
+  limpiarPreviaUnion()
+
+  const caja = document.getElementById('union-resultado')
+  caja.textContent = 'Calculando…'
+
+  const r = await api(`/api/comunidad/${p.id}/unir`, {
+    method: 'POST',
+    body: JSON.stringify({ ...p.body, previsualizar: true }),
+  })
+  if (!r || r.error) { caja.textContent = ''; toast(r?.error || 'No se pudo calcular la unión', true); return }
+
+  capaPreviaUnion = L.geoJSON(r.geometria, {
+    style: { color: '#a78bfa', weight: 3, fillColor: '#a78bfa', fillOpacity: .18, dashArray: '7 4' },
+  }).addTo(map)
+  setTab('mapas')
+  setTimeout(() => { try { map.fitBounds(capaPreviaUnion.getBounds(), { padding: [50, 50] }) } catch {} }, 180)
+
+  const antes = +r.area_actual_ha || 0
+  const desp  = +r.area_nueva_ha  || 0
+  const dif   = desp - antes
+  caja.innerHTML = `
+    <div style="line-height:1.6">
+      <b style="color:#a78bfa">Vista previa en morado sobre el mapa</b><br>
+      Área actual: ${antes.toFixed(2)} ha → nueva: <b>${desp.toFixed(2)} ha</b>
+      (<span style="color:${dif >= 0 ? '#22c55e' : '#ef4444'}">${dif >= 0 ? '+' : '−'}${Math.abs(dif).toFixed(2)} ha</span>)
+      ${r.detalle?.parcelas_unidas ? `<br>${r.detalle.parcelas_unidas} parcela(s) unida(s)` : ''}
+    </div>`
+
+  unionPendiente = p
+  document.getElementById('btn-aplicar-union').disabled = false
+}
+
+async function aplicarUnion() {
+  if (!unionPendiente) { toast('Previsualiza primero el resultado', true); return }
+  const { id, body } = unionPendiente
+  const nombre = document.getElementById('union-comunidad').selectedOptions[0]?.textContent || 'este territorio'
+
+  const queHace = body.modo === 'parcelas' ? 'unir las parcelas familiares en un solo perímetro'
+                : body.modo === 'huecos'   ? 'tapar los vacíos interiores'
+                :                            'fundir los dos territorios traslapados en uno'
+
+  pedirConfirmacion('¿Guardar la unión?',
+    `Se va a ${queHace} de ${nombre}. La geometría que estás viendo en morado pasará a ser la oficial. Queda registrada a tu nombre y se puede deshacer.`,
+    async () => {
+    const r = await api(`/api/comunidad/${id}/unir`, {
+      method: 'POST',
+      body: JSON.stringify({ ...body, previsualizar: false, motivo: `Unión automática (${body.modo}) desde el geovisor` }),
+    })
+    if (!r || r.error) { toast(r?.error || 'No se pudo guardar la unión', true); return }
+
+    toast(`Geometría guardada · ${(+r.area_nueva_ha).toFixed(2)} ha`)
+    limpiarPreviaUnion()
+    document.getElementById('union-resultado').textContent = ''
+    if (document.getElementById('chk-perimetros')?.checked) toggleTodosPerimetros(true)
+    if (document.getElementById('chk-parcelas')?.checked)   toggleParcelas(true)
+    diagnosticarComunidad()
+  }, { aceptar: 'Guardar unión', clase: 'btn-primary' })
+}
+
+function popupHTML(p) {
+  return `<div style="font-size:.85rem;line-height:1.5">
+    <b>${p.nombre}</b><br>
+    <span style="color:#6b7280">${p.tipo || ''}</span><br>
+    📍 ${p.municipio || '—'}, ${p.departamento || '—'}<br>
+    👥 ${p.personas || '?'} personas · 🏡 ${p.familias || '?'} familias<br>
+    <a href="#" onclick="mostrarDetalle(${p.id});return false" style="color:#22c55e;font-weight:600">Ver detalle →</a>
+  </div>`
+}
+
+/* ──────────────── LISTA LATERAL (pestaña Mapas) ──────────────── */
+function renderizarLista(rows) {
+  const wrapper = document.getElementById('lista-wrapper')
+  document.getElementById('total-label').textContent = `${rows.length} registro(s)`
+  wrapper.innerHTML = rows.slice(0, 150).map(r => {
+    const p     = r.properties || r
+    const tipo  = p.tipo || p.tipo_comunidad || ''
+    const badge = tipo.replace(/\s/g, '_')
+    return `<div class="reg-item" onclick="mostrarDetalle(${p.id})">
+      <div class="reg-nombre">${p.nombre || p.nombre_comunidad || '—'}</div>
+      <div class="reg-sub">📍 ${p.municipio || '—'}, ${p.departamento || '—'}</div>
+      <span class="reg-badge b-${badge}">${tipo.replace(/_/g, ' ')}</span>
+    </div>`
+  }).join('')
+}
+
+/* ──────────────── CARGA DE DATOS (mapa) ──────────────── */
+async function cargar() {
+  const params = new URLSearchParams()
+  const q = document.getElementById('f-q').value.trim()
+  const tipo  = document.getElementById('f-tipo').value
+  const depto = document.getElementById('f-depto').value
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  const derecho = document.getElementById('f-derecho').value
+  if (q)      params.set('q',      q)
+  if (tipo)   params.set('tipo',   tipo)
+  if (depto)  params.set('depto',  depto)
+  if (desde)  params.set('desde',  desde)
+  if (hasta)  params.set('hasta',  hasta)
+  if (derecho)params.set('derecho',derecho)
+
+  const geo = await api('/api/puntos?' + params)
+  if (!geo) return
+  rawData = geo.features || []
+
+  renderizarMapa(rawData)
+  renderizarLista(rawData)
+  poblarTimeline(rawData)
+}
+
+function limpiarFiltros() {
+  ['f-q','f-tipo','f-depto','f-derecho','f-desde','f-hasta'].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.value = ''
+  })
+  cargar()
+}
+
+/* ──────────────── REGIÓN (topbar) ──────────────── */
+/* El selector de región del encabezado y el filtro de departamento de la
+   pestaña Mapas son el mismo dato: se mantienen sincronizados en los dos
+   sentidos para que nunca muestren cosas distintas. */
+function onRegionChange() {
+  document.getElementById('f-depto').value = regionActual()
+  refrescarTodo()
+}
+
+function onDeptoChange() {
+  const depto = document.getElementById('f-depto').value
+  const sel = document.getElementById('region-selector')
+  // Solo se copia si esa región existe como opción del encabezado
+  if ([...sel.options].some(o => o.value === depto)) sel.value = depto
+  refrescarTodo()
+}
+
+/* Recarga el mapa (siempre, porque alimenta la lista lateral) y además lo
+   que esté visible en ese momento. Las demás pestañas se recargan solas al
+   entrar en ellas. */
+function refrescarTodo() {
+  cargar()
+  if (tabActual === 'dashboard') cargarDashboard()
+  if (tabActual === 'activos')   cargarActivos(1)
+  if (tabActual === 'analisis')  cargarAnalisis()
+}
+
+/* ──────────────── OPCIONES FILTROS ──────────────── */
+async function cargarOpciones() {
+  const data = await api('/api/opciones')
+  if (!data) return
+  const sel = (id, arr) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    arr.forEach(v => {
+      const o = document.createElement('option')
+      o.value = v; o.textContent = v.replace(/_/g, ' ')
+      el.appendChild(o)
+    })
+  }
+  sel('f-tipo',   data.tipos)
+  sel('f-depto',  data.deptos)
+  sel('f-derecho',data.derechos)
+  sel('region-selector', data.deptos)
+}
+
+/* ──────────────── DETALLE ──────────────── */
+async function mostrarDetalle(id) {
+  const data = await api(`/api/registro/${id}`)
+  if (!data) return
+  detalleActualId = id
+  document.getElementById('detail-title').textContent = data.nombre_comunidad || 'Registro'
+
+  const fila  = (lbl, val) => val
+    ? `<div class="detail-row"><span class="lbl">${lbl}</span><span class="val">${String(val).replace(/_/g,' ')}</span></div>`
+    : ''
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-section">
+      <h4>🏡 Comunidad</h4>
+      ${fila('Tipo',         data.tipo_comunidad)}
+      ${fila('Pueblo',       data.pueblo_etnico)}
+      ${fila('Organización', data.tipo_organizacion_filial)}
+      ${fila('Familias',     data.numero_familias)}
+      ${fila('Personas',     data.numero_personas)}
+      ${fila('Mujeres',      data.numero_mujeres)}
+      ${fila('Hombres',      data.numero_hombres)}
+      ${fila('Registro',     data.fecha_registro ? new Date(data.fecha_registro).toLocaleDateString('es-CO') : null)}
+    </div>
+    <div class="detail-section">
+      <h4>👤 Representante</h4>
+      ${fila('Nombre',       data.nombres_autoridades)}
+      ${fila('Cargo',        data.cargo)}
+      ${fila('Legitimidad',  data.legitimidad)}
+      ${fila('Documento',    data.numero_documento_representante)}
+    </div>
+    <div class="detail-section">
+      <h4>🗺️ Territorio</h4>
+      ${fila('Nombre',       data.nombre_territorio)}
+      ${fila('Procedimiento',data.tipo_procedimiento)}
+      ${fila('Departamento', data.departamento)}
+      ${fila('Municipio',    data.municipio)}
+      ${fila('Vereda',       data.vereda)}
+      ${fila('Predio',       data.nombre_predio)}
+      ${fila('Área declarada (ha)', data.area_ha)}
+      ${fila('Área real medida (ha)', data.area_real_ha)}
+      ${fila('Perímetro (km)', data.perimetro_km)}
+      ${fila('Método de captura', data.metodo_captura_legible)}
+      ${fila('Límites',      data.limites_territorio)}
+      ${fila('Zonas espec.', data.zonas_especiales)}
+      ${fila('Reconoc. Estado', data.reconocimiento_estado)}
+      ${data.latitud  ? fila('Coordenadas', `${(+data.latitud).toFixed(5)}, ${(+data.longitud).toFixed(5)}`) : ''}
+    </div>
+    <div class="detail-section">
+      <h4>⚖️ Derechos y Fuentes</h4>
+      ${fila('Derecho',      data.tipo_derecho)}
+      ${fila('Restricción',  data.tipo_restriccion)}
+      ${fila('Fuente espa.', data.tipo_fuente_espacial)}
+      ${fila('N° Plano',     data.numero_plano)}
+      ${fila('Acto admin.',  data.tipo_procedimiento)}
+    </div>
+    <div class="detail-section">
+      <h4>📖 Historia y Uso</h4>
+      ${fila('Antigüedad',   data.antiguedad_territorio)}
+      ${data.descripcion_historia ? `<div class="detail-row" style="flex-direction:column;gap:4px"><span class="lbl">Historia</span><span class="val" style="font-style:italic">"${data.descripcion_historia.slice(0,200)}${data.descripcion_historia.length>200?'…':''}"</span></div>` : ''}
+      ${fila('Uso',          data.tipo_uso)}
+      ${fila('Reglas int.',  data.reglas_internas)}
+    </div>
+    <div class="detail-section">
+      <h4>✅ Validación Comunitaria</h4>
+      ${fila('Validación',   data.validado_por_comunidad)}
+      ${fila('Observaciones',data.observaciones_finales)}
+      <!-- Estado del envío por WhatsApp: se rellena aparte porque necesita
+           su propia consulta y no debe retrasar el resto de la ficha -->
+      <div id="val-estado" style="margin-top:8px"></div>
+    </div>
+    ${seccionCenso(data.censo)}
+    ${seccionFamilias(data.familias)}
+    ${seccionFuentes(data.fuentes_administrativas)}
+    ${seccionLindero(data.lindero)}
+    ${seccionFotos(data.fotos)}
+    ${seccionTranscripciones(data.transcripciones)}
+    ${(data.poligono || data.latitud) ? `<button class="btn-chatbot" style="background:var(--surface-3)" onclick="verEnMapa()">🗺️ Ver en el mapa</button>` : ''}
+    <button class="btn-chatbot" style="background:#1d4ed8" onclick="descargarPlancha('predio', ${data.id}, '${String(data.nombre_comunidad || 'registro').replace(/'/g, "\\'")}')">📐 Plancha del predio (PDF)</button>
+    <button class="btn-chatbot" style="background:#1d4ed8" onclick="descargarPlancha('territorio', ${data.id}, '${String(data.nombre_comunidad || 'registro').replace(/'/g, "\\'")}')">🌎 Plancha del territorio (PDF)</button>
+    ${USER.rol === 'admin' && data.poligono ? `<button class="btn-chatbot" style="background:#b45309" onclick="editarPoligono(${data.id}, '${String(data.nombre_comunidad || 'este territorio').replace(/'/g, "\\'")}')">✏️ Corregir el lindero en el mapa</button>` : ''}
+    ${USER.rol === 'admin' ? `<button class="btn-chatbot" onclick="abrirChatbot()">💬 Enviar mensaje al chatbot</button>` : ''}
+    ${USER.rol === 'admin' ? `<button class="btn-eliminar" onclick="eliminarRegistro(${data.id}, '${String(data.nombre_comunidad || 'este territorio').replace(/'/g, "\\'")}')">🗑️ Eliminar este registro</button>` : ''}
+  `
+  document.getElementById('detail').classList.add('open')
+  cargarFotos(data.fotos)
+  cargarEstadoValidacion(data.id)
+
+  if (capaTerritorioDetalle) { map.removeLayer(capaTerritorioDetalle); capaTerritorioDetalle = null }
+  detalleCoords = (data.latitud && data.longitud) ? [+data.latitud, +data.longitud] : null
+  if (data.poligono) {
+    capaTerritorioDetalle = L.geoJSON(data.poligono, {
+      style: { color: '#22c55e', weight: 3, opacity: .9, fillColor: '#22c55e', fillOpacity: .14 },
+    }).addTo(map)
+    if (tabActual === 'mapas') map.fitBounds(capaTerritorioDetalle.getBounds(), { padding: [40, 40] })
+  } else if (detalleCoords && tabActual === 'mapas') {
+    map.setView(detalleCoords, 12)
+  }
+}
+
+/* Lleva el mapa hasta el territorio de la ficha abierta. Sirve sobre todo
+   cuando la ficha se abrió desde Activos, Análisis o las alertas, donde el
+   mapa no está a la vista. */
+function verEnMapa() {
+  setTab('mapas')
+  setTimeout(() => {
+    if (capaTerritorioDetalle) {
+      try { map.fitBounds(capaTerritorioDetalle.getBounds(), { padding: [40, 40] }); return } catch {}
+    }
+    if (detalleCoords) map.setView(detalleCoords, 12)
+  }, 150)
+}
+
+function cerrarDetalle() {
+  document.getElementById('detail').classList.remove('open')
+  liberarFotos()
+  detalleActualId = null
+  detalleCoords   = null
+  if (capaTerritorioDetalle) { map.removeLayer(capaTerritorioDetalle); capaTerritorioDetalle = null }
+}
+
+/* ──────────────── FOTOS DE LA FICHA ──────────────── */
+const ETIQUETA_FOTO = {
+  documento_legal: 'Documento legal', plano_mapa: 'Plano o mapa', limites_territorio: 'Lindero',
+  zonas_especiales: 'Zona especial', restriccion: 'Restricción', territorio: 'Territorio',
+  comunidad_reunida: 'Comunidad', sin_categoria: 'Sin categoría',
+}
+let urlsFotos = []
+function liberarFotos() { urlsFotos.forEach(u => { try { URL.revokeObjectURL(u) } catch {} }); urlsFotos = [] }
+
+function seccionFotos(fotos) {
+  if (!fotos || !fotos.length) return ''
+  const celdas = fotos.map(f => `
+    <div class="foto-item cargando" id="foto-${f.id}"
+         data-desc="${(f.descripcion || '').replace(/"/g, '&quot;')}"
+         data-cat="${ETIQUETA_FOTO[f.categoria] || f.categoria}">…</div>`).join('')
+  return `<div class="detail-section"><h4>📷 Fotografías (${fotos.length})</h4><div class="fotos-grid">${celdas}</div></div>`
+}
+
+async function cargarFotos(fotos) {
+  liberarFotos()
+  if (!fotos || !fotos.length) return
+  for (const f of fotos) {
+    const celda = document.getElementById(`foto-${f.id}`)
+    if (!celda) continue
+    try {
+      const r = await fetch(`/api/foto/${f.id}`, { headers: { 'Authorization': 'Bearer ' + TOKEN } })
+      if (!r.ok) throw new Error(String(r.status))
+      const url = URL.createObjectURL(await r.blob())
+      urlsFotos.push(url)
+      const cat = celda.dataset.cat
+      celda.classList.remove('cargando')
+      celda.innerHTML = `<img src="${url}" alt="${cat}"><span class="cat">${cat}</span>`
+      celda.onclick = () => abrirFoto(url, cat, celda.dataset.desc)
+    } catch {
+      celda.textContent = 'no disponible'
+    }
+  }
+}
+
+function abrirFoto(url, categoria, descripcion) {
+  document.getElementById('lightbox-img').src = url
+  document.getElementById('lightbox-pie').textContent = descripcion ? `${categoria} — ${descripcion}` : categoria
+  document.getElementById('foto-lightbox').classList.add('open')
+}
+function cerrarFoto() {
+  document.getElementById('foto-lightbox').classList.remove('open')
+  document.getElementById('lightbox-img').src = ''
+}
+
+/* ──────────────── OTRAS SECCIONES DE LA FICHA ──────────────── */
+function seccionFuentes(fuentes) {
+  if (!fuentes || !fuentes.length) return ''
+  const filas = fuentes.map(f => {
+    const fecha = f.fecha_documento ? new Date(f.fecha_documento).toLocaleDateString('es-CO') : (f.fecha_declarada || 'sin fecha')
+    const tipo = String(f.tipo_acto_administrativo || f.tipo_fuente || '').replace(/_/g, ' ')
+    const num  = f.numero_acto_administrativo ? ` N° ${f.numero_acto_administrativo}` : ''
+    return `<div class="detail-row"><span class="lbl">${tipo}</span><span class="val">${num || '—'} · ${fecha}</span></div>`
+  }).join('')
+  return `<div class="detail-section"><h4>📑 Documentos que lo sustentan</h4>${filas}</div>`
+}
+
+function seccionLindero(lindero) {
+  if (!lindero || !lindero.length) return ''
+  const total = lindero.reduce((s, t) => s + (+t.longitud_m || 0), 0)
+  const metodo = lindero[0].metodo_legible || ''
+  const filas = lindero.slice(0, 12).map(t =>
+    `<div class="detail-row"><span class="lbl">Tramo ${t.tramo}</span><span class="val">${(+t.longitud_m).toFixed(0)} m${t.descripcion_lindero ? ' · ' + t.descripcion_lindero : ''}</span></div>`
+  ).join('')
+  const resto = lindero.length > 12
+    ? `<div class="detail-row"><span class="lbl"></span><span class="val" style="color:var(--text-2)">y ${lindero.length - 12} tramos más</span></div>`
+    : ''
+  return `<div class="detail-section"><h4>📐 Lindero (${lindero.length} tramos · ${(total / 1000).toFixed(2)} km)</h4>
+    <div class="detail-row"><span class="lbl">Método</span><span class="val">${metodo}</span></div>${filas}${resto}</div>`
+}
+
+function seccionCenso(c) {
+  if (!c || (!c.personas_declaradas && !c.familias_registradas)) return ''
+  const pct = c.cobertura_censo_pct != null ? +c.cobertura_censo_pct : null
+  const barra = pct != null ? `
+    <div style="margin-top:8px">
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(pct, 100)}%;background:#22c55e"></div>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-2);margin-top:4px">${pct}% de la población estimada ya está registrada casa por casa</div>
+    </div>` : ''
+  const linea = (lbl, dec, med) => `<div class="detail-row"><span class="lbl">${lbl}</span><span class="val">${med ?? 0} registradas${dec ? ` · ${dec} estimadas` : ''}</span></div>`
+  return `<div class="detail-section"><h4>📊 Censo — declarado y medido</h4>
+    ${linea('Familias', c.familias_declaradas, c.familias_registradas)}
+    ${linea('Personas', c.personas_declaradas, c.personas_registradas)}
+    ${c.mujeres_registradas != null ? `<div class="detail-row"><span class="lbl">Mujeres / hombres</span><span class="val">${c.mujeres_registradas} / ${c.hombres_registrados}</span></div>` : ''}
+    ${barra}</div>`
+}
+
+/* Las parcelas de la ficha se guardan aquí para no tener que volver a
+   pedirlas cuando se corrige un lindero: la geometría ya vino con la ficha. */
+let parcelasDeLaFicha = []
+
+function seccionFamilias(fam) {
+  parcelasDeLaFicha = fam || []
+
+  // Antes, un territorio sin parcelas simplemente no mostraba la sección, y
+  // desde la ficha no había forma de distinguir «no tiene parcelas» de «algo
+  // falló al consultarlas».
+  if (!fam || !fam.length) {
+    return `<div class="detail-section">
+      <h4>🏠 Parcelas familiares (0)</h4>
+      <div style="font-size:.76rem;color:var(--text-2);line-height:1.5">
+        Este territorio no tiene parcelas familiares registradas. Se crean cuando una familia
+        hace su propio levantamiento por WhatsApp, dentro del territorio de la comunidad.
+      </div>
+    </div>`
+  }
+  const nombreSeguro = (s) => String(s || '').replace(/'/g, "\\'")
+  const filas = fam.map(f => `
+    <div class="detail-row">
+      <span class="lbl">${f.nombre_familia || f.jefe_hogar || 'Familia'}</span>
+      <span class="val">
+        ${f.numero_personas ?? '?'} personas${f.area_real_ha ? ` · ${(+f.area_real_ha).toFixed(2)} ha` : ''}${f.tipo_derecho ? ` · ${String(f.tipo_derecho).replace(/_/g, ' ')}` : ''}
+        <button class="btn-eliminar-fam" style="color:#1d4ed8" title="Plancha de esta parcela en PDF" onclick="descargarPlancha('parcela', ${f.predio_id}, '${nombreSeguro(f.jefe_hogar || f.nombre_familia || 'parcela')}')">📐</button>
+        ${USER.rol === 'admin' && f.predio_id && f.poligono ? `<button class="btn-eliminar-fam" style="color:#b45309" title="Corregir el lindero de esta parcela en el mapa" onclick="editarParcelaDeFicha(${f.predio_id})">✏️</button>` : ''}
+        ${USER.rol === 'admin' && f.familia_id ? `<button class="btn-eliminar-fam" title="Eliminar esta familia" onclick="eliminarFamilia(${f.familia_id}, '${nombreSeguro(f.nombre_familia || f.jefe_hogar || 'esta familia')}')">🗑️</button>` : ''}
+      </span>
+    </div>`).join('')
+
+  const sinLindero = fam.filter(f => !f.poligono).length
+  return `<div class="detail-section">
+    <h4>🏠 Parcelas familiares (${fam.length})</h4>
+    ${filas}
+    ${USER.rol === 'admin' ? `<div style="font-size:.7rem;color:var(--text-2);margin-top:6px;line-height:1.45">
+      📐 descarga la plancha de la parcela · ✏️ corrige su lindero sobre el mapa
+      ${sinLindero ? `<br>${sinLindero} parcela(s) todavía sin lindero capturado: no se pueden corregir hasta que la familia lo dibuje o lo recorra.` : ''}
+    </div>` : ''}
+  </div>`
+}
+
+/* Corregir el lindero de una parcela desde la ficha del territorio. Es el
+   mismo modo de edición del popup del mapa, pero entrando por donde la
+   gente busca: la lista de parcelas de la comunidad. */
+function editarParcelaDeFicha(predioId) {
+  if (!esAdmin()) return
+  const f = parcelasDeLaFicha.find(x => +x.predio_id === +predioId)
+  if (!f || !f.poligono) { toast('Esa parcela todavía no tiene el lindero capturado', true); return }
+
+  // Se guarda a qué comunidad volver ANTES de cerrar la ficha, porque
+  // cerrarDetalle() borra el id del territorio que estaba abierto.
+  const volverA = detalleActualId
+
+  cerrarDetalle()
+  abrirEdicionLindero({
+    geometria: f.poligono,
+    ruta:      `/api/predio/${predioId}/poligono`,
+    nombre:    f.jefe_hogar || f.nombre_familia || 'Parcela familiar',
+    tipo:      'parcela',
+  })
+  if (edicionActiva) edicionActiva.comunidadId = volverA
+}
+
+function seccionTranscripciones(tr) {
+  if (!tr || !tr.length) return ''
+  const items = tr.map(t => `
+    <div class="transcripcion">
+      <div class="preg">${String(t.pregunta_clave).replace(/_/g, ' ')}</div>
+      <div class="txt">"${t.transcripcion}"</div>
+    </div>`).join('')
+  return `<div class="detail-section"><h4>🎙️ Respuestas habladas (${tr.length})</h4>${items}</div>`
+}
+
+/* ──────────────── VISTA DEL MAPA ──────────────── */
+function setVistaMap(tipo) {
+  vistaMap = tipo
+  ;['puntos','cluster','calor'].forEach(v => document.getElementById(`vo-${v}`).classList.toggle('active', v === tipo))
+  renderizarMapa(rawData)
+}
+
+function toggleTimeline() {
+  const bar = document.getElementById('timeline-bar')
+  const visible = bar.style.display === 'flex'
+  bar.style.display = visible ? 'none' : 'flex'
+  map.invalidateSize()
+}
+
+/* ──────────────── TIMELINE ──────────────── */
+function poblarTimeline(features) {
+  if (!features.length) return
+  const fechas = features.map(f => f.properties.fecha || f.properties.fecha_registro).filter(Boolean).map(f => new Date(f)).sort((a, b) => a - b)
+  if (!fechas.length) return
+  timelineData = { min: fechas[0], max: fechas[fechas.length - 1], all: features }
+}
+
+function onTimeline(val) {
+  if (!timelineData.min) return
+  const ms  = timelineData.min.getTime()
+  const rng = timelineData.max.getTime() - ms
+  const cut  = new Date(ms + rng * (val / 100))
+  document.getElementById('timeline-val').textContent = cut.toLocaleDateString('es-CO', { year:'numeric', month:'short' })
+  const filtered = timelineData.all.filter(f => {
+    const fd = f.properties.fecha || f.properties.fecha_registro
+    return !fd || new Date(fd) <= cut
+  })
+  renderizarMapa(filtered)
+  renderizarLista(filtered)
+}
+
+/* ──────────────── HELPERS DE FORMATO (compartidos Dashboard/Activos/Análisis) ──────────────── */
+const METODO_CORTO = {
+  Metodo_Directo: 'Recorrido GPS', recorrido_gps: 'Recorrido GPS',
+  Metodo_Declarativo_y_Colaborativo: 'Croquis', croquis_manual: 'Croquis',
+  Metodo_Indirecto: 'Cartografía', Sin_Metodo: 'Sin capturar', no_capturado: 'Sin capturar',
+}
+function badgeMetodo(m) {
+  const sinCaptura = !m || m === 'Sin_Metodo' || m === 'no_capturado'
+  const etiqueta = METODO_CORTO[m] || (sinCaptura ? 'Sin capturar' : String(m).replace(/_/g,' '))
+  return `<span class="badge ${sinCaptura ? 'badge-gray' : 'badge-green'}">${etiqueta}</span>`
+}
+function filaTerritorio(r) {
+  const fecha = r.fecha_registro ? new Date(r.fecha_registro).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' }) : '—'
+  return `<tr onclick="mostrarDetalle(${r.id})">
+    <td>${r.nombre_comunidad || '—'}</td>
+    <td>${String(r.tipo_comunidad || '—').replace(/_/g,' ')}</td>
+    <td>${[r.municipio, r.departamento].filter(Boolean).join(', ') || '—'}</td>
+    <td>${r.numero_personas ?? '—'}</td>
+    <td>${r.area_real_ha != null ? (+r.area_real_ha).toFixed(1) + ' ha' : '—'}</td>
+    <td>${badgeMetodo(r.metodo_captura_perimetro)}</td>
+    <td>${fecha}</td>
+  </tr>`
+}
+
+/* ──────────────── DASHBOARD ──────────────── */
+let chartDepto, chartTipo, chartTiempo
+
+/* Opciones comunes de las gráficas en tema oscuro. El contenedor
+   .chart-box ya fija el alto, así que las gráficas no deben mantener
+   proporción propia. */
+const EJES_OSCUROS = {
+  x: { beginAtZero: true, grid: { color: '#232d3a' }, ticks: { color: '#8b96a5' } },
+  y: { grid: { color: '#232d3a' }, ticks: { color: '#e7ebf0' } },
+}
+const BASE_CHART = { responsive: true, maintainAspectRatio: false }
+
+/* Muestra u oculta el lienzo y su mensaje de "sin datos" a la vez. */
+function alternarGrafica(idCanvas, hayDatos) {
+  const canvas = document.getElementById(idCanvas)
+  const vacio  = document.getElementById(idCanvas + '-empty')
+  canvas.parentElement.style.display = hayDatos ? 'block' : 'none'
+  if (vacio) vacio.style.display = hayDatos ? 'none' : 'block'
+  return hayDatos
+}
+
+async function cargarDashboard() {
+  const [data, ultimos] = await Promise.all([
+    api('/api/estadisticas?' + conRegion()),
+    api('/api/ultimos?' + conRegion(new URLSearchParams({ limit: 5 }))),
+  ])
+
+  // data.kpi puede faltar si el servidor respondió con un error: en ese caso
+  // se dejan las tarjetas como están en vez de romper toda la pantalla.
+  if (data && data.kpi) {
+    const kpi      = data.kpi
+    const cobertura = data.cobertura || {}
+    const perim    = data.perimetro  || {}
+    const porDepto = data.porDepto   || []
+    const porTipo  = data.porTipo    || []
+    const porMes   = data.porMes     || []
+
+    const conGps      = Number(cobertura.con_gps || 0)
+    const conPoligono = Number(perim.con_poligono || 0)
+    const territorioHa = Number(perim.territorio_medido_ha || 0)
+
+    document.getElementById('kd-comunidades').textContent     = Number(kpi.total_registros || 0).toLocaleString('es-CO')
+    document.getElementById('kd-comunidades-sub').textContent  = `+${Number(kpi.esta_semana || 0)} esta semana`
+    document.getElementById('kd-personas').textContent         = Number(kpi.total_personas || 0).toLocaleString('es-CO')
+    document.getElementById('kd-personas-sub').textContent     = `${Number(kpi.total_familias || 0).toLocaleString('es-CO')} familias`
+    document.getElementById('kd-territorio').textContent       = territorioHa.toLocaleString('es-CO', { maximumFractionDigits: 1 })
+    document.getElementById('kd-poligono').textContent         = conPoligono.toLocaleString('es-CO')
+    document.getElementById('kd-poligono-sub').textContent     = `de ${conGps} con ubicación`
+
+    // El backend avisa si la columna del perímetro todavía no existe
+    document.getElementById('aviso-perimetro').hidden = perim.disponible !== false
+
+    if (chartDepto)  { chartDepto.destroy();  chartDepto  = null }
+    if (chartTipo)   { chartTipo.destroy();   chartTipo   = null }
+    if (chartTiempo) { chartTiempo.destroy(); chartTiempo = null }
+
+    if (alternarGrafica('chart-depto', porDepto.length)) {
+      chartDepto = new Chart(document.getElementById('chart-depto'), {
+        type: 'bar',
+        data: { labels: porDepto.map(r => r.departamento),
+          datasets: [{ label: 'Comunidades', data: porDepto.map(r => +r.cantidad), backgroundColor: '#22c55e', borderRadius: 4 }] },
+        options: { ...BASE_CHART, indexAxis: 'y', plugins: { legend: { display: false } },
+          scales: { x: EJES_OSCUROS.x, y: { grid: { display: false }, ticks: { color: '#e7ebf0' } } } }
+      })
+    }
+
+    if (alternarGrafica('chart-tipo', porTipo.length)) {
+      const COLORES = ['#16a34a','#22c55e','#4ade80','#86efac','#a78bfa','#f59e0b','#3b82f6']
+      chartTipo = new Chart(document.getElementById('chart-tipo'), {
+        type: 'doughnut',
+        data: { labels: porTipo.map(r => String(r.tipo_comunidad).replace(/_/g,' ')),
+          datasets: [{ data: porTipo.map(r => +r.cantidad), backgroundColor: COLORES, borderColor: '#141b24', borderWidth: 2 }] },
+        options: { ...BASE_CHART, plugins: { legend: { position: 'bottom', labels: { color: '#e7ebf0', font: { size: 10 } } } } }
+      })
+    }
+
+    // Serie de tiempo: cuántos territorios se registraron cada mes
+    if (alternarGrafica('chart-tiempo', porMes.length)) {
+      chartTiempo = new Chart(document.getElementById('chart-tiempo'), {
+        type: 'line',
+        data: { labels: porMes.map(r => r.mes),
+          datasets: [{ label: 'Registros', data: porMes.map(r => +r.cantidad),
+            borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.15)', tension: .35, fill: true, pointRadius: 3 }] },
+        options: { ...BASE_CHART, plugins: { legend: { display: false } }, scales: EJES_OSCUROS }
+      })
+    }
+  }
+
+  document.getElementById('tbody-ultimos').innerHTML =
+    ultimos?.registros?.length ? ultimos.registros.map(filaTerritorio).join('')
+    : `<tr><td colspan="7" class="empty-state">Sin datos todavía</td></tr>`
+}
+
+/* ──────────────── ACTIVOS ──────────────── */
+let activosPagina = 1
+let activosPaginas = 1
+
+async function cargarActivos(pagina) {
+  activosPagina = Math.min(Math.max(1, pagina || activosPagina), Math.max(1, activosPaginas))
+  const params = conRegion(new URLSearchParams({ page: activosPagina, limit: 20 }))
+  const q = document.getElementById('act-buscar').value.trim()
+  if (q) params.set('q', q)
+
+  const data = await api('/api/registros?' + params)
+  if (!data || !data.data) return
+
+  activosPaginas = Math.max(1, data.pages || 1)
+  document.getElementById('tbody-activos').innerHTML =
+    data.data.length ? data.data.map(filaTerritorio).join('')
+    : `<tr><td colspan="7" class="empty-state">No hay territorios que coincidan con la búsqueda</td></tr>`
+  document.getElementById('activos-pag-info').textContent =
+    `Página ${data.page} de ${activosPaginas} · ${data.total} registro(s)`
+}
+
+// Se limita al rango real de páginas: antes "Siguiente" seguía avanzando
+// más allá de la última y la tabla quedaba vacía sin explicación.
+function cambiarPaginaActivos(delta) {
+  const destino = activosPagina + delta
+  if (destino < 1 || destino > activosPaginas) return
+  cargarActivos(destino)
+}
+
+/* ──────────────── ANÁLISIS ESPACIAL ──────────────── */
+let chartAreas
+function claseDiferencia(pct) {
+  if (pct == null) return ''
+  const a = Math.abs(pct)
+  if (a > 20) return 'diff-neg'
+  if (a > 5)  return 'diff-mid'
+  return 'diff-pos'
+}
+
+async function cargarAnalisis() {
+  const region = conRegion().toString()
+  const sufijo = region ? '?' + region : ''
+  const [areas, traslapes, densidad] = await Promise.all([
+    api('/api/analisis/areas' + sufijo),
+    api('/api/analisis/traslapes' + sufijo),
+    api('/api/analisis/densidad'),
+  ])
+
+  if (areas) {
+    const filas = areas.registros || []
+    if (chartAreas) { chartAreas.destroy(); chartAreas = null }
+    if (alternarGrafica('chart-areas', filas.length)) {
+      chartAreas = new Chart(document.getElementById('chart-areas'), {
+        type: 'bar',
+        data: {
+          labels: filas.map(r => r.nombre_comunidad),
+          datasets: [
+            { label: 'Declarada (ha)', data: filas.map(r => +r.area_declarada || 0), backgroundColor: '#3b82f6', borderRadius: 4 },
+            { label: 'Medida (ha)',    data: filas.map(r => +r.area_real || 0),      backgroundColor: '#f59e0b', borderRadius: 4 },
+          ],
+        },
+        options: { ...BASE_CHART, indexAxis: 'y',
+          plugins: { legend: { labels: { color: '#e7ebf0' } } },
+          scales: { x: EJES_OSCUROS.x, y: { grid: { display: false }, ticks: { color: '#e7ebf0' } } } }
+      })
+    }
+
+    document.getElementById('tbody-analisis').innerHTML = filas.length ? filas.map(r => `
+      <tr onclick="mostrarDetalle(${r.id})">
+        <td>${r.nombre_comunidad || '—'}</td>
+        <td>${r.municipio || '—'}</td>
+        <td>${badgeMetodo(r.metodo)}</td>
+        <td>${r.area_declarada != null ? Number(r.area_declarada).toLocaleString('es-CO', {maximumFractionDigits:2}) : '—'}</td>
+        <td>${r.area_real != null ? Number(r.area_real).toLocaleString('es-CO', {maximumFractionDigits:2}) : '—'}</td>
+        <td>${r.perimetro_km != null ? Number(r.perimetro_km).toLocaleString('es-CO', {maximumFractionDigits:2}) + ' km' : '—'}</td>
+        <td class="${claseDiferencia(r.diferencia_pct)}">${r.diferencia_pct != null ? (r.diferencia_pct > 0 ? '+' : '') + r.diferencia_pct + '%' : '—'}</td>
+      </tr>`).join('') : `<tr><td colspan="7" class="empty-state">${
+        // Si el backend respondió con error, casi siempre es que falta la
+        // migración del perímetro: se dice, en vez de dejar la tabla muda.
+        areas.error ? 'No se pudo calcular. Revisa que se haya aplicado migrate_perimetro.sql en la base de datos.'
+                    : 'Todavía no hay territorios con perímetro capturado'
+      }</td></tr>`
+  }
+
+  const cont = document.getElementById('traslapes-contenido')
+  if (traslapes) {
+    if (traslapes.error) {
+      cont.innerHTML = `<div class="empty-state">No se pudo calcular. Revisa que se haya aplicado migrate_perimetro.sql.</div>`
+    } else if (!traslapes.total) {
+      cont.innerHTML = `<div class="traslape-ok">✅ No se detectó ningún traslape entre los territorios capturados</div>`
+    } else {
+      cont.innerHTML = traslapes.traslapes.map(t => `
+        <div class="traslape-item">
+          <b>${t.comunidad_a}</b> se traslapa con <b>${t.comunidad_b}</b>
+          — ${Number(t.hectareas_traslape).toFixed(2)} ha (${t.pct_de_a}% del territorio de ${t.comunidad_a})
+          <div style="color:var(--text-2);font-size:.76rem;margin-top:2px">📍 ${t.municipio || '—'}</div>
+        </div>`).join('')
+    }
+  }
+
+  /* Distribución territorial por municipio.
+     Sale de /api/analisis/densidad, que ya existía en el backend pero
+     ningún tablero mostraba. El filtro por región se hace aquí mismo
+     porque la consulta devuelve el país entero. */
+  if (densidad) {
+    const region = regionActual()
+    const filas = (densidad.por_municipio || [])
+      .filter(r => !region || String(r.departamento || '').toLowerCase().includes(region.toLowerCase()))
+      .slice(0, 50)
+    document.getElementById('tbody-densidad').innerHTML = filas.length ? filas.map(r => `
+      <tr>
+        <td>${r.departamento || '—'}</td>
+        <td>${r.municipio || '—'}</td>
+        <td>${Number(r.comunidades || 0).toLocaleString('es-CO')}</td>
+        <td>${Number(r.personas || 0).toLocaleString('es-CO')}</td>
+      </tr>`).join('') : `<tr><td colspan="4" class="empty-state">Sin datos todavía</td></tr>`
+  }
+}
+
+/* ──────────────── INFORMES ──────────────── */
+async function cargarAlertasInformes() {
+  const data = await api('/api/alertas')
+  const cont = document.getElementById('informes-alertas')
+  if (!data) return
+  cont.innerHTML = data.total ? data.alertas.map(a => `
+    <div class="alerta-item" onclick="mostrarDetalle(${a.id})">
+      <span class="alerta-sev sev-${a.severidad}">${a.severidad.toUpperCase()}</span>
+      <div class="alerta-msg">${a.mensaje}</div>
+      <div class="alerta-who">📍 ${a.comunidad}</div>
+    </div>`).join('') : `<div class="empty-state">Sin alertas — los datos se ven consistentes</div>`
+}
+
+/* ──────────────── ALERTAS (dropdown de notificaciones) ──────────────── */
+
+/* El número rojo de la campana. Se carga al abrir el visor: antes solo
+   aparecía después de hacer clic en la campana, así que quien entraba no se
+   enteraba de que había alertas esperando. */
+async function cargarConteoAlertas() {
+  const data = await api('/api/alertas')
+  if (!data || data.total == null) return
+  const badge = document.getElementById('badge-alerta')
+  badge.style.display = data.total ? 'block' : 'none'
+  badge.textContent   = data.total > 9 ? '9+' : data.total
+}
+
+let alertasAbiertas = false
+async function toggleAlertas() {
+  const panel = document.getElementById('alertas-panel')
+  alertasAbiertas = !alertasAbiertas
+  if (!alertasAbiertas) { panel.style.display = 'none'; return }
+  panel.style.display = 'block'
+  const data = await api('/api/alertas')
+  if (!data) return
+  document.getElementById('badge-alerta').style.display = data.total ? 'block' : 'none'
+  document.getElementById('badge-alerta').textContent   = data.total > 9 ? '9+' : data.total
+  panel.innerHTML = `<div style="padding:12px 14px;font-weight:700;font-size:.9rem;border-bottom:1px solid var(--border)">
+    🔔 ${data.total} alerta(s) detectada(s)
+    <button onclick="document.getElementById('alertas-panel').style.display='none';alertasAbiertas=false"
+      style="float:right;background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-2)">✕</button>
+  </div>` + (data.total ? data.alertas.map(a => `
+    <div class="alerta-item" onclick="mostrarDetalle(${a.id})">
+      <span class="alerta-sev sev-${a.severidad}">${a.severidad.toUpperCase()}</span>
+      <div class="alerta-msg">${a.mensaje}</div>
+      <div class="alerta-who">📍 ${a.comunidad}</div>
+    </div>`).join('') : `<div class="empty-state">Sin alertas</div>`)
+}
+
+/* ──────────────── CONFIGURACIÓN ──────────────── */
+function cargarConfiguracion() {
+  document.getElementById('cfg-nombre').textContent  = USER.nombre || '—'
+  document.getElementById('cfg-usuario').textContent = USER.username || '—'
+  document.getElementById('cfg-rol').textContent      = USER.rol || '—'
+
+  // La gestión de usuarios es solo para administradores. El backend ya la
+  // protege con adminOnly; esto es para no mostrar algo que iba a fallar.
+  const card = document.getElementById('card-usuarios')
+  card.hidden = USER.rol !== 'admin'
+  if (USER.rol === 'admin') cargarUsuarios()
+}
+
+/* ──────────────── USUARIOS (admin) ────────────────
+   Los endpoints /api/usuarios existían desde antes en el servidor pero
+   ninguna pantalla los usaba: crear un usuario para el visor obligaba a
+   entrar a la base de datos a mano. */
+function toggleFormUsuario() {
+  const f = document.getElementById('form-nuevo-usuario')
+  f.hidden = !f.hidden
+}
+
+async function cargarUsuarios() {
+  const data = await api('/api/usuarios')
+  const tbody = document.getElementById('tbody-usuarios')
+  if (!Array.isArray(data)) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No se pudo cargar la lista de usuarios</td></tr>`
+    return
+  }
+  const esc = s => String(s || '').replace(/'/g, "\\'")
+  tbody.innerHTML = data.map(u => `
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.nombre || '—'}</td>
+      <td><span class="badge ${u.rol === 'admin' ? 'badge-green' : 'badge-gray'}">${u.rol === 'admin' ? 'Administrador' : 'Consulta'}</span></td>
+      <td>${u.activo ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Inactivo</span>'}</td>
+      <td>${u.last_login ? new Date(u.last_login).toLocaleDateString('es-CO') : 'nunca'}</td>
+      <td style="text-align:right">
+        ${u.username === USER.username
+          ? '<span style="color:var(--text-3);font-size:.74rem">tu cuenta</span>'
+          : `<button class="btn-sm btn-secondary" onclick="cambiarEstadoUsuario(${u.id}, ${!u.activo}, '${esc(u.nombre || u.username)}', '${u.rol}')">${u.activo ? 'Desactivar' : 'Activar'}</button>`}
+      </td>
+    </tr>`).join('')
+}
+
+async function crearUsuario() {
+  const username = document.getElementById('nu-username').value.trim()
+  const password = document.getElementById('nu-password').value
+  const nombre   = document.getElementById('nu-nombre').value.trim()
+  const rol      = document.getElementById('nu-rol').value
+  if (!username || !password) return toast('El usuario y la contraseña son obligatorios', true)
+  if (password.length < 6)    return toast('La contraseña debe tener al menos 6 caracteres', true)
+
+  const r = await api('/api/usuarios', { method: 'POST', body: JSON.stringify({ username, password, nombre, rol }) })
+  if (r?.ok) {
+    toast('Usuario creado ✓')
+    ;['nu-username','nu-password','nu-nombre'].forEach(id => { document.getElementById(id).value = '' })
+    toggleFormUsuario()
+    cargarUsuarios()
+  } else {
+    toast(r?.error || 'No se pudo crear el usuario', true)
+  }
+}
+
+async function cambiarEstadoUsuario(id, activo, nombre, rol) {
+  const r = await api(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify({ nombre, rol, activo }) })
+  if (r?.ok) {
+    toast(activo ? 'Usuario activado ✓' : 'Usuario desactivado ✓')
+    cargarUsuarios()
+  } else {
+    toast(r?.error || 'No se pudo actualizar el usuario', true)
+  }
+}
+
+async function cambiarPassword() {
+  const actual = document.getElementById('cfg-pass-actual').value
+  const nueva  = document.getElementById('cfg-pass-nueva').value
+  if (!actual || !nueva) return toast('Completa ambos campos', true)
+  if (nueva.length < 6) return toast('La contraseña nueva debe tener al menos 6 caracteres', true)
+  const r = await api('/auth/password', { method: 'PUT', body: JSON.stringify({ actual, nueva }) })
+  if (r?.ok) {
+    toast('Contraseña actualizada ✓')
+    document.getElementById('cfg-pass-actual').value = ''
+    document.getElementById('cfg-pass-nueva').value  = ''
+  } else {
+    toast(r?.error || 'Error actualizando la contraseña', true)
+  }
+}
+
+/* ──────────────── EXPORTAR ──────────────── */
+const EXTENSION_EXPORT = { csv: 'csv', excel: 'xlsx', pdf: 'pdf' }
+
+/* extra.q permite exportar exactamente lo que se está viendo en la tabla de
+   Activos, que tiene su propio buscador. */
+function exportar(fmt, extra = {}) {
+  const params  = new URLSearchParams()
+  const q       = extra.q ?? document.getElementById('f-q').value.trim()
+  const tipo    = document.getElementById('f-tipo').value
+  const depto   = document.getElementById('f-depto').value || regionActual()
+  const desde   = document.getElementById('f-desde').value
+  const hasta   = document.getElementById('f-hasta').value
+  const derecho = document.getElementById('f-derecho').value
+  if (q)      params.set('q', q)
+  if (tipo)   params.set('tipo', tipo)
+  if (depto)  params.set('depto', depto)
+  if (desde)  params.set('desde', desde)
+  if (hasta)  params.set('hasta', hasta)
+  if (derecho)params.set('derecho', derecho)
+
+  toast('Generando ' + fmt.toUpperCase() + '… el PDF puede tardar un poco')
+  fetch(`/api/export/${fmt}?` + params, { headers: h() })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob() })
+    .then(blob => {
+      // El nombre del archivo se pone aquí: al descargar desde un blob el
+      // navegador ignora el Content-Disposition del servidor y, sin esto,
+      // el archivo llegaba con un nombre aleatorio.
+      const url  = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `catastro_etnico_${new Date().toISOString().slice(0, 10)}.${EXTENSION_EXPORT[fmt] || fmt}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
+      toast('Archivo generado ✓')
+    })
+    .catch(err => {
+      console.error(err)
+      toast('Error generando el archivo', true)
+    })
+}
+
+/* ──────────────── PLANCHA EN PDF ────────────────
+   Dos modalidades, las dos sobre una misma comunidad:
+
+     predio     — el predio colectivo con sus colindantes alrededor
+     territorio — el territorio con todas las parcelas familiares dentro
+
+   La descarga va por fetch y no por un enlace directo porque el endpoint
+   pide el token en la cabecera; un <a href> no lo llevaría. */
+async function descargarPlancha(modalidad, comunidadId, nombre) {
+  if (!comunidadId) { toast('Abre primero la ficha de un territorio', true); return }
+
+  toast(`Generando la plancha de ${modalidad}… puede tardar unos segundos`)
+  try {
+    const r = await fetch(`/api/export/plancha/${modalidad}/${comunidadId}`, { headers: h() })
+    if (r.status === 401) { logout(); return }
+    if (!r.ok) {
+      // El servidor manda el motivo en JSON cuando algo falta (por ejemplo
+      // que la comunidad no tenga predio colectivo).
+      let motivo = 'HTTP ' + r.status
+      try { motivo = (await r.json()).error || motivo } catch {}
+      toast(motivo, true)
+      return
+    }
+
+    const blob = await r.blob()
+    const url  = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const slug = String(nombre || 'registro').normalize('NFD').replace(/[̀-ͯ]/g, '')
+                   .replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '').toLowerCase()
+    link.href = url
+    link.download = `plancha_${modalidad}_${slug}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
+    toast('Plancha generada ✓')
+  } catch (err) {
+    console.error(err)
+    toast('No se pudo generar la plancha', true)
+  }
+}
+
+/* Desde la pestaña Informes no hay una ficha abierta, así que primero se
+   elige en el desplegable qué se va a consultar.
+
+   Cada opción lleva en data-tipo si es un territorio o una parcela, porque
+   de eso depende qué botones tienen sentido: de un territorio se pueden
+   sacar las dos planchas; de una parcela familiar, la suya. */
+function opcionPlanchaSeleccionada() {
+  const sel = document.getElementById('plancha-comunidad')
+  const op  = sel?.selectedOptions[0]
+  if (!sel?.value || !op) { toast('Elige primero qué quieres consultar', true); return null }
+  return { id: sel.value, tipo: op.dataset.tipo || 'territorio', nombre: op.dataset.nombre || op.textContent.trim() }
+}
+
+function descargarPlanchaDesdeInformes(modalidad) {
+  const op = opcionPlanchaSeleccionada()
+  if (!op) return
+
+  if (op.tipo === 'parcela') {
+    // De una parcela familiar solo tiene sentido su propia plancha: su
+    // territorio se descarga eligiendo el territorio en la lista.
+    descargarPlancha('parcela', op.id, op.nombre)
+    return
+  }
+  descargarPlancha(modalidad, op.id, op.nombre)
+}
+
+/* Ajusta los botones a lo que se eligió: con una parcela seleccionada,
+   las dos modalidades de territorio no aplican. */
+function ajustarBotonesPlancha() {
+  const sel = document.getElementById('plancha-comunidad')
+  const op  = sel?.selectedOptions[0]
+  const esParcela = op?.dataset.tipo === 'parcela'
+
+  const bPredio = document.getElementById('btn-plancha-predio')
+  const bTerr   = document.getElementById('btn-plancha-territorio')
+  const bParc   = document.getElementById('btn-plancha-parcela')
+  if (!bPredio) return
+
+  bPredio.style.display = esParcela ? 'none' : ''
+  bTerr.style.display   = esParcela ? 'none' : ''
+  bParc.style.display   = esParcela ? '' : 'none'
+
+  document.getElementById('plancha-ayuda').innerHTML = esParcela
+    ? `<b style="color:var(--text)">Parcela familiar:</b> el plano sale a nombre del jefe o jefa
+       de hogar, con la parcela como predio principal y las parcelas vecinas como colindantes.`
+    : `<b style="color:var(--text)">Predio:</b> el predio colectivo al centro y los predios
+       colindantes alrededor, rotulados con su interesado.
+       <b style="color:var(--text);margin-left:8px">Territorio:</b> el territorio completo con
+       todas las parcelas familiares dibujadas dentro y el consolidado de hogares y superficies.`
+}
+
+async function cargarSelectorPlancha() {
+  const sel = document.getElementById('plancha-comunidad')
+  if (!sel || sel.dataset.cargado === '1') return
+
+  // Las dos consultas van en paralelo: la lista de comunidades y la de
+  // parcelas familiares, que es la que trae los jefes de hogar.
+  const [comunidades, parcelas] = await Promise.all([
+    api('/api/registros?limit=100'),
+    api('/api/parcelas'),
+  ])
+  if (!comunidades || !comunidades.data) return
+
+  const opcTerritorios = (comunidades.data || []).map(r =>
+    `<option value="${r.id}" data-tipo="territorio" data-nombre="${escTexto(r.nombre_comunidad || 'Sin nombre')}">
+       ${escTexto(r.nombre_comunidad || 'Sin nombre')}
+     </option>`).join('')
+
+  /* Las parcelas se listan por el nombre de su jefe o jefa de hogar, que es
+     como las reconoce la comunidad; el nombre de la parcela y el de su
+     territorio van detrás para poder distinguir dos hogares que se llamen
+     parecido en resguardos distintos. */
+  const feats = (parcelas?.poligonos?.features || []).filter(f => f.properties?.id)
+  const opcParcelas = feats.map(f => {
+    const p      = f.properties
+    const jefe   = p.jefe_hogar || p.familia || 'Sin jefe de hogar registrado'
+    const detras = [p.familia && p.familia !== jefe ? p.familia : null, p.comunidad]
+                     .filter(Boolean).join(' · ')
+    return `<option value="${p.id}" data-tipo="parcela" data-nombre="${escTexto(jefe)}">
+              ${escTexto(jefe)}${detras ? ' — ' + escTexto(detras) : ''}
+            </option>`
+  }).join('')
+
+  sel.innerHTML =
+    '<option value="">— Elige qué consultar —</option>' +
+    (opcTerritorios ? `<optgroup label="Territorios colectivos">${opcTerritorios}</optgroup>` : '') +
+    (opcParcelas    ? `<optgroup label="Parcelas familiares (por jefe de hogar)">${opcParcelas}</optgroup>` : '')
+
+  sel.dataset.cargado = '1'
+  sel.onchange = ajustarBotonesPlancha
+  ajustarBotonesPlancha()
+}
+
+/* ──────────────── VALIDACIÓN COMUNITARIA POR WHATSAPP ────────────────
+   Se le manda a la comunidad la imagen de cómo quedó su territorio y se
+   espera a que digan si están de acuerdo. Lo que llega por este canal se
+   guarda como revisión de las autoridades, no como validación de asamblea:
+   el sí viene de un teléfono, no de una reunión. */
+
+const ETIQUETA_VALIDACION = {
+  sin_lindero:          { t: 'Sin lindero capturado',            c: '#6b7280', i: '—'  },
+  sin_enviar:           { t: 'Todavía no se ha enviado',         c: '#6b7280', i: '📭' },
+  esperando_respuesta:  { t: 'Enviada, esperando respuesta',     c: '#d97706', i: '⏳' },
+  con_observaciones:    { t: 'Devuelta con observaciones',       c: '#dc2626', i: '✋' },
+  revisada_autoridades: { t: 'Revisada por las autoridades',     c: '#16a34a', i: '✅' },
+  validada_asamblea:    { t: 'Validada en asamblea',             c: '#15803d', i: '🏛️' },
+  caduca:               { t: 'Caducó: el lindero cambió después', c: '#dc2626', i: '⚠️' },
+}
+
+async function cargarEstadoValidacion(comunidadId) {
+  const caja = document.getElementById('val-estado')
+  if (!caja) return
+
+  const r = await api(`/api/comunidad/${comunidadId}/validacion`)
+  if (!r || r.sin_migracion || !r.estado) { caja.innerHTML = ''; return }
+
+  const e   = r.estado
+  const eti = ETIQUETA_VALIDACION[e.estado] || ETIQUETA_VALIDACION.sin_enviar
+  const puedeEnviar = esAdmin() && e.estado !== 'sin_lindero'
+
+  // Lo que respondieron, cuando devolvieron algo con observaciones
+  const partesMal = e.secciones
+    ? Object.entries(e.secciones).filter(([, ok]) => ok === false).map(([k]) => ({
+        lindero: 'el dibujo del lindero', area: 'la superficie',
+        datos: 'los datos de la comunidad', derechos: 'los derechos y documentos',
+      }[k] || k))
+    : []
+
+  caja.innerHTML = `
+    <div style="background:var(--surface-2);border-left:3px solid ${eti.c};border-radius:7px;padding:9px 11px;font-size:.78rem;line-height:1.5">
+      <div style="font-weight:600;color:${eti.c}">${eti.i} ${eti.t}</div>
+      ${e.fecha_envio ? `<div style="color:var(--text-2);margin-top:3px">
+        Enviada el ${new Date(e.fecha_envio).toLocaleDateString('es-CO')} a ${escTexto(e.telefono_destino || '—')}
+        ${e.fecha_respuesta ? ` · respondida el ${new Date(e.fecha_respuesta).toLocaleDateString('es-CO')}` : ''}
+      </div>` : ''}
+      ${partesMal.length ? `<div style="color:#dc2626;margin-top:5px">Señalaron: ${escTexto(partesMal.join(', '))}</div>` : ''}
+      ${(e.respuesta_texto || e.transcripcion) ? `<div style="margin-top:5px;font-style:italic;color:var(--text)">
+        "${escTexto((e.transcripcion || e.respuesta_texto).slice(0, 240))}"
+      </div>` : ''}
+      ${e.estado === 'caduca' ? `<div style="color:var(--text-2);margin-top:5px">
+        La comunidad aprobó una versión anterior del lindero. Hay que enviarles la versión actual.
+      </div>` : ''}
+      ${puedeEnviar ? `<div class="btn-row" style="margin-top:9px">
+        <button class="btn-sm btn-primary" onclick="enviarAValidacion(${comunidadId}, '${String(e.nombre_comunidad || '').replace(/'/g, "\\'")}')">
+          ${e.estado === 'esperando_respuesta' ? '🔁 Reenviar a la comunidad' : '📲 Enviar a validación'}
+        </button>
+      </div>` : ''}
+    </div>`
+}
+
+async function enviarAValidacion(comunidadId, nombre) {
+  const estado = await api(`/api/comunidad/${comunidadId}/validacion`)
+  const tel = estado?.estado?.telefono_destino || ''
+
+  const numero = prompt(
+    `¿A qué número de WhatsApp se le envía la información de ${nombre || 'este territorio'} para que la revisen?\n\n` +
+    `Recibirán una imagen con el lindero dibujado y los datos principales, y responderán escribiendo «validar».`,
+    tel)
+
+  // prompt devuelve null si cancelan; una cadena vacía significa «usar el
+  // número que quedó registrado cuando la comunidad habló con el bot».
+  if (numero === null) return
+
+  toast('Generando la imagen y enviándola…')
+  const r = await api(`/api/comunidad/${comunidadId}/validacion/solicitar`, {
+    method: 'POST',
+    body: JSON.stringify({ telefono: numero.trim() || null }),
+  })
+  if (!r || r.error) { toast(r?.error || 'No se pudo enviar', true); return }
+
+  toast('Enviado ✓ Quedamos esperando su respuesta')
+  cargarEstadoValidacion(comunidadId)
+  if (tabActual === 'informes') cargarValidacionesPendientes()
+}
+
+/* Listado para la pestaña Informes, junto a las alertas de calidad */
+async function cargarValidacionesPendientes() {
+  const caja = document.getElementById('informes-validaciones')
+  if (!caja) return
+
+  const r = await api('/api/validaciones/pendientes')
+  if (!r || r.sin_migracion) {
+    caja.innerHTML = `<div style="padding:14px 16px;font-size:.78rem;color:var(--text-2)">
+      Falta aplicar <code>migrate_validacion_comunitaria.sql</code> para usar la validación por WhatsApp.
+    </div>`
+    return
+  }
+  if (!r.total) {
+    caja.innerHTML = `<div style="padding:14px 16px;font-size:.8rem;color:#22c55e">
+      ✅ No hay validaciones pendientes.
+    </div>`
+    return
+  }
+
+  caja.innerHTML = `
+    <table class="tabla">
+      <thead><tr><th>Comunidad</th><th>Estado</th><th>Enviada</th><th>Lo que dijeron</th><th></th></tr></thead>
+      <tbody>
+        ${r.validaciones.map(v => {
+          const eti = ETIQUETA_VALIDACION[v.estado] || ETIQUETA_VALIDACION.sin_enviar
+          return `<tr>
+            <td><a href="#" onclick="mostrarDetalle(${v.comunidad_id});return false" style="color:var(--green);font-weight:600">${escTexto(v.nombre_comunidad || '—')}</a></td>
+            <td><span style="color:${eti.c};font-weight:600">${eti.i} ${eti.t}</span></td>
+            <td>${v.fecha_envio ? new Date(v.fecha_envio).toLocaleDateString('es-CO') : '—'}</td>
+            <td style="max-width:320px">${escTexto(((v.transcripcion || v.respuesta_texto) || '').slice(0, 120)) || '—'}</td>
+            <td>${esAdmin() ? `<button class="btn-sm btn-secondary" onclick="enviarAValidacion(${v.comunidad_id}, '${String(v.nombre_comunidad || '').replace(/'/g, "\\'")}')">Enviar</button>` : ''}</td>
+          </tr>`
+        }).join('')}
+      </tbody>
+    </table>`
+}
+
+/* ──────────────── CAPA EXTERNA: GeoJSON, Shapefile, KML/KMZ ──────────────── */
+function mostrarCapaExterna(gj, nombre) {
+  if (geojsonCapa) map.removeLayer(geojsonCapa)
+  geojsonCapa = L.geoJSON(gj, {
+    style: { color: '#a78bfa', weight: 2, fillOpacity: .15 },
+    pointToLayer: (feat, latlng) => L.circleMarker(latlng, { radius: 6, color: '#a78bfa', weight: 2, fillOpacity: .5 }),
+    onEachFeature: (feat, layer) => {
+      if (feat.properties) layer.bindPopup(
+        '<pre style="font-size:.75rem;max-height:200px;overflow:auto">' + JSON.stringify(feat.properties, null, 2) + '</pre>'
+      )
+    }
+  }).addTo(map)
+  if (geojsonCapa.getBounds().isValid()) map.fitBounds(geojsonCapa.getBounds(), { padding: [20, 20] })
+  toast('Capa cargada: ' + nombre)
+}
+
+function kmlTextoAGeoJSON(texto) {
+  const xml = new DOMParser().parseFromString(texto, 'text/xml')
+  if (xml.getElementsByTagName('parsererror').length) throw new Error('KML inválido')
+  return toGeoJSON.kml(xml)
+}
+
+async function cargarCapa(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const nombre = file.name
+  const ext = nombre.toLowerCase().split('.').pop()
+  try {
+    if (ext === 'geojson' || ext === 'json') {
+      mostrarCapaExterna(JSON.parse(await file.text()), nombre)
+    } else if (ext === 'zip') {
+      let gj = await shp(await file.arrayBuffer())
+      if (Array.isArray(gj)) gj = { type: 'FeatureCollection', features: gj.flatMap(c => c.features) }
+      mostrarCapaExterna(gj, nombre)
+    } else if (ext === 'kml') {
+      mostrarCapaExterna(kmlTextoAGeoJSON(await file.text()), nombre)
+    } else if (ext === 'kmz') {
+      const zip = await JSZip.loadAsync(await file.arrayBuffer())
+      const entrada = Object.values(zip.files).find(f => f.name.toLowerCase().endsWith('.kml'))
+      if (!entrada) throw new Error('El .kmz no contiene ningún archivo .kml')
+      mostrarCapaExterna(kmlTextoAGeoJSON(await entrada.async('text')), nombre)
+    } else {
+      toast('Formato no soportado: .' + ext, true)
+    }
+  } catch (err) {
+    console.error(err)
+    toast('Error al leer "' + nombre + '": ' + (err?.message || 'archivo inválido'), true)
+  }
+}
+
+function quitarCapa() {
+  if (geojsonCapa) { map.removeLayer(geojsonCapa); geojsonCapa = null }
+  document.getElementById('file-geojson').value = ''
+}
+
+/* ──────────────── CAPA WMS ──────────────── */
+let contadorWMS = 0
+const capasWMS = {}
+
+async function cargarCapacidadesWMS() {
+  const url = document.getElementById('wms-url').value.trim()
+  const sel = document.getElementById('wms-capas-disponibles')
+  if (!url) { toast('Escribe primero la URL del servicio WMS', true); return }
+  sel.style.display = 'none'
+  sel.innerHTML = ''
+  try {
+    const sep = url.includes('?') ? '&' : '?'
+    const res = await fetch(url + sep + 'service=WMS&request=GetCapabilities')
+    const xml = new DOMParser().parseFromString(await res.text(), 'text/xml')
+    if (xml.getElementsByTagName('parsererror').length) throw new Error('respuesta inválida')
+    const nombres = [...xml.getElementsByTagName('Layer')].map(l => l.getElementsByTagName('Name')[0]?.textContent).filter(Boolean)
+    if (!nombres.length) throw new Error('el servicio no devolvió capas')
+    sel.innerHTML = '<option value="">— elige una capa —</option>' + nombres.map(n => '<option value="' + n.replace(/"/g, '&quot;') + '">' + n + '</option>').join('')
+    sel.style.display = 'block'
+    sel.onchange = () => { document.getElementById('wms-layer').value = sel.value }
+    toast(nombres.length + ' capa(s) encontradas en el servicio')
+  } catch (err) {
+    console.error(err)
+    toast('No se pudieron leer las capacidades del servicio (puede que no permita consultarlo desde el navegador). Escribe el nombre de la capa directamente.', true)
+  }
+}
+
+function agregarCapaWMS() {
+  const url = document.getElementById('wms-url').value.trim()
+  const layerName = document.getElementById('wms-layer').value.trim()
+  if (!url || !layerName) { toast('Escribe la URL del servicio y el nombre de la capa', true); return }
+  const id = 'wms' + (++contadorWMS)
+  const capa = L.tileLayer.wms(url, { layers: layerName, format: 'image/png', transparent: true, version: '1.1.1', attribution: 'WMS: ' + layerName })
+  capa.on('tileerror', () => toast('La capa WMS "' + layerName + '" no cargó — revisa la URL y el nombre de la capa', true))
+  capa.addTo(map)
+  layersControl.addOverlay(capa, layerName)
+  capasWMS[id] = { layer: capa, nombre: layerName }
+  renderListaWMS()
+  document.getElementById('wms-layer').value = ''
+  toast('Capa WMS agregada: ' + layerName)
+}
+
+function quitarCapaWMS(id) {
+  const entrada = capasWMS[id]
+  if (!entrada) return
+  map.removeLayer(entrada.layer)
+  layersControl.removeLayer(entrada.layer)
+  delete capasWMS[id]
+  renderListaWMS()
+}
+
+function renderListaWMS() {
+  const cont = document.getElementById('wms-lista')
+  const ids = Object.keys(capasWMS)
+  if (!ids.length) { cont.innerHTML = ''; return }
+  cont.innerHTML = ids.map(id =>
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.74rem;padding:4px 0;gap:6px;color:var(--text)">' +
+      '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + capasWMS[id].nombre + '">' + capasWMS[id].nombre + '</span>' +
+      '<button class="btn-sm btn-secondary" style="padding:2px 8px;flex:none" onclick="quitarCapaWMS(\'' + id + '\')">✕</button>' +
+    '</div>'
+  ).join('')
+}
+
+/* ──────────────── CHATBOT ──────────────── */
+function abrirChatbot()  { document.getElementById('modal-chatbot').classList.add('open') }
+function cerrarChatbot() { document.getElementById('modal-chatbot').classList.remove('open') }
+
+async function enviarChatbot() {
+  const numero  = document.getElementById('cb-numero').value.trim()
+  const mensaje = document.getElementById('cb-msg').value.trim()
+  if (!numero || !mensaje) return toast('Completa número y mensaje', true)
+  const r = await api('/api/chatbot/mensaje', { method: 'POST', body: JSON.stringify({ numero, mensaje }) })
+  if (r?.ok) {
+    toast('Mensaje enviado ✓')
+    cerrarChatbot()
+    document.getElementById('cb-numero').value = ''
+    document.getElementById('cb-msg').value    = ''
+  } else {
+    toast(r?.error || 'Error enviando mensaje', true)
+  }
+}
+
+/* ──────────────── CONFIRMACIÓN GENÉRICA (borrados) ──────────────── */
+let confirmarCallback = null
+/* El cuarto parámetro es opcional: sin él, el modal se comporta como
+   siempre (botón rojo «Sí, eliminar»). Se añadió porque guardar un lindero
+   editado también necesita confirmación, y ahí el botón no puede decir
+   «eliminar» ni verse como un borrado. */
+function pedirConfirmacion(titulo, texto, callback, opts = {}) {
+  document.getElementById('confirmar-titulo').textContent = titulo
+  document.getElementById('confirmar-texto').textContent  = texto
+
+  const btn = document.getElementById('confirmar-aceptar')
+  btn.textContent = opts.aceptar || 'Sí, eliminar'
+  btn.className   = 'btn-sm ' + (opts.clase || 'btn-danger')
+
+  confirmarCallback = callback
+  document.getElementById('modal-confirmar').classList.add('open')
+}
+function cerrarConfirmar() {
+  document.getElementById('modal-confirmar').classList.remove('open')
+  confirmarCallback = null
+}
+async function ejecutarConfirmacion() {
+  const cb = confirmarCallback
+  cerrarConfirmar()
+  if (cb) await cb()
+}
+
+/* ──────────────── BORRAR REGISTROS ──────────────── */
+async function eliminarRegistro(id, nombre) {
+  pedirConfirmacion(
+    '🗑️ Eliminar registro',
+    `Esto borra por completo "${nombre}": comunidad, representante, historia, derechos, fuentes, fotos, transcripciones y todas las parcelas familiares que tenga. No se puede deshacer.`,
+    async () => {
+      const r = await api(`/api/registro/${id}`, { method: 'DELETE' })
+      if (r?.ok) {
+        toast('Registro eliminado ✓')
+        cerrarDetalle()
+        cargar()
+        if (tabActual === 'dashboard') cargarDashboard()
+        if (tabActual === 'activos')   cargarActivos(activosPagina)
+      } else {
+        toast(r?.error || 'Error eliminando el registro', true)
+      }
+    }
+  )
+}
+
+async function eliminarFamilia(id, nombre) {
+  pedirConfirmacion(
+    '🗑️ Eliminar familia',
+    `Esto borra la parcela y los datos de "${nombre}". El territorio colectivo y las demás familias no se ven afectados. No se puede deshacer.`,
+    async () => {
+      const r = await api(`/api/familia/${id}`, { method: 'DELETE' })
+      if (r?.ok) {
+        toast('Familia eliminada ✓')
+        if (detalleActualId) mostrarDetalle(detalleActualId)
+        cargar()
+      } else {
+        toast(r?.error || 'Error eliminando la familia', true)
+      }
+    }
+  )
+}
+
+/* ──────────────── WEBSOCKET ──────────────── */
+let ws, wsRetry = 0
+function wsConnect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  ws = new WebSocket(`${proto}://${location.host}`)
+  ws.onopen = () => {
+    document.getElementById('ws-dot').classList.add('online')
+    document.getElementById('live-label').textContent = 'En vivo'
+    wsRetry = 0
+  }
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data)
+    if (msg.tipo === 'nuevo_registro') {
+      toast(`📨 Nuevo registro: ${msg.data.nombre_comunidad}`)
+      setTimeout(() => {
+        cargar()
+        cargarConteoAlertas()
+        if (tabActual === 'dashboard') cargarDashboard()
+        if (tabActual === 'activos')   cargarActivos(1)
+      }, 800)
+    }
+    if (msg.tipo === 'usuarios_conectados') {
+      document.getElementById('live-label').textContent = `En vivo (${msg.count})`
+    }
+  }
+  ws.onclose = () => {
+    document.getElementById('ws-dot').classList.remove('online')
+    document.getElementById('live-label').textContent = 'Sin conexión'
+    const delay = Math.min(30000, 1000 * 2 ** wsRetry++)
+    setTimeout(wsConnect, delay)
+  }
+  ws.onerror = () => ws.close()
+}
+
+/* ──────────────── TOAST ──────────────── */
+let toastTimer
+function toast(msg, err = false) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.style.background = err ? '#ef4444' : '#16a34a'
+  el.classList.add('show')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500)
+}
+
+/* ──────────────── DEBOUNCE ──────────────── */
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) }
+}
+
+/* ──────────────── TECLADO ────────────────
+   Escape cierra lo que esté abierto, de lo más superficial a lo más
+   profundo (foto ampliada → modales → notificaciones → ficha). */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return
+  if (document.getElementById('foto-lightbox').classList.contains('open'))   return cerrarFoto()
+  if (document.getElementById('modal-confirmar').classList.contains('open')) return cerrarConfirmar()
+  if (document.getElementById('modal-chatbot').classList.contains('open'))   return cerrarChatbot()
+  // Escape sale del modo edición dejando el lindero como estaba guardado
+  if (edicionActiva) return cancelarEdicionPoligono()
+  const panel = document.getElementById('alertas-panel')
+  if (panel.style.display === 'block') { panel.style.display = 'none'; alertasAbiertas = false; return }
+  if (document.getElementById('detail').classList.contains('open')) return cerrarDetalle()
+});
+
+/* ──────────────── INIT ──────────────── */
+(async () => {
+  await cargarOpciones()
+  await cargar()
+  await cargarDashboard()
+  cargarConteoAlertas()
+  wsConnect()
+})()
+</script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modelo ER (Chen) — Catastro Étnico</title>
+<style>
+  :root {
+    --fondo: #ffffff; --papel: #f7f8f7; --tinta: #1f2937; --tinta2: #6b7280;
+    --borde: #e5e7eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #131c17; --papel: #0d1310; --tinta: #e8ece9; --tinta2: #9aa5a0;
+      --borde: #2a3831;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fondo: #131c17; --papel: #0d1310; --tinta: #e8ece9; --tinta2: #9aa5a0;
+    --borde: #2a3831;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 24px 60px; background: var(--papel); color: var(--tinta);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+  }
+  .hoja { max-width: 1500px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: -.01em; }
+  .sub { color: var(--tinta2); font-size: .95rem; margin: 0 0 22px; }
+  figure { margin: 0 0 28px; }
+  .marco {
+    background: var(--fondo); border: 1px solid var(--borde); border-radius: 10px;
+    padding: 14px; overflow-x: auto;
+  }
+  .marco svg { display: block; height: auto; }
+  #fig1 { min-width: 1300px; width: 3320px; max-width: none; }
+  #fig2 { min-width: 1200px; width: 2960px; max-width: none; }
+  figcaption {
+    font-size: .86rem; color: var(--tinta2); margin-top: 10px; max-width: 90ch;
+  }
+  h2 { font-size: 1.05rem; margin: 30px 0 10px; }
+  .nota {
+    background: var(--fondo); border: 1px solid var(--borde); border-left: 3px solid #199e70;
+    border-radius: 8px; padding: 14px 16px; font-size: .9rem; max-width: 100ch;
+  }
+  .nota b { color: #199e70; }
+  table { border-collapse: collapse; font-size: .87rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 6px 14px 6px 0; border-bottom: 1px solid var(--borde); }
+  th { color: var(--tinta2); font-weight: 600; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <h1>Modelo Entidad–Relación en notación de Chen</h1>
+  <p class="sub">Base de datos <code>catastro_etnico</code> — Registro Territorial Comunitario · perfil LADM-COL</p>
+
+  <figure>
+    <div class="marco">
+      <svg viewBox="0 0 1840 350" role="img" aria-label="Leyenda de los símbolos de la notación de Chen empleados en el diagrama" style="width:100%;max-width:1840px">
+        <rect x="70" y="50" width="96" height="32" rx="3" fill="var(--fondo)" stroke="currentColor" stroke-width="2"/>
+<text x="210" y="71" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Entidad fuerte</text>
+<rect x="65" y="123" width="106" height="42" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="70" y="128" width="96" height="32" rx="3" fill="var(--fondo)" stroke="currentColor" stroke-width="2"/>
+<text x="210" y="149" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Entidad débil</text>
+<rect x="70" y="206" width="96" height="32" rx="3" fill="var(--fondo)" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="210" y="227" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Entidad abstracta (padre ISA)</text>
+<polygon points="118,270 192,300 118,330 44,300" fill="none" stroke="currentColor" stroke-width="1.8"/>
+<rect x="70" y="284" width="96" height="32" rx="3" fill="var(--fondo)" stroke="currentColor" stroke-width="2"/>
+<text x="210" y="305" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Entidad asociativa</text>
+<polygon points="548,46 596,66 548,86 500,66" fill="var(--fondo)" stroke="currentColor" stroke-width="2"/>
+<text x="640" y="71" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Relación</text>
+<polygon points="548,117 603,144 548,171 493,144" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<polygon points="548,124 596,144 548,164 500,144" fill="var(--fondo)" stroke="currentColor" stroke-width="2"/>
+<text x="640" y="149" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Relación identificadora</text>
+<ellipse cx="548" cy="222" rx="48" ry="18" fill="var(--fondo)" stroke="currentColor" stroke-width="1.8"/>
+<text x="548" y="227" text-anchor="middle" font-size="13" font-weight="500" fill="currentColor">attr</text>
+<text x="640" y="227" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Atributo</text>
+<ellipse cx="548" cy="300" rx="48" ry="18" fill="var(--fondo)" stroke="currentColor" stroke-width="1.8"/>
+<text x="548" y="305" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor" text-decoration="underline">id</text>
+<text x="640" y="305" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Atributo clave (subrayado)</text>
+<ellipse cx="978" cy="66" rx="48" ry="18" fill="var(--fondo)" stroke="currentColor" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="1070" y="71" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Atributo derivado (se calcula)</text>
+<ellipse cx="978" cy="144" rx="54" ry="24" fill="none" stroke="currentColor" stroke-width="1.4"/>
+<ellipse cx="978" cy="144" rx="48" ry="18" fill="var(--fondo)" stroke="currentColor" stroke-width="1.8"/>
+<text x="1070" y="149" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Atributo multivaluado</text>
+<line x1="978" y1="222" x2="940" y2="198" stroke="currentColor" stroke-width="1.2"/>
+<line x1="978" y1="222" x2="940" y2="246" stroke="currentColor" stroke-width="1.2"/>
+<ellipse cx="940" cy="198" rx="22" ry="11" fill="var(--fondo)" stroke="currentColor" stroke-width="1.4"/>
+<ellipse cx="940" cy="246" rx="22" ry="11" fill="var(--fondo)" stroke="currentColor" stroke-width="1.4"/>
+<ellipse cx="992" cy="222" rx="34" ry="16" fill="var(--fondo)" stroke="currentColor" stroke-width="1.8"/>
+<text x="1070" y="227" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Atributo compuesto</text>
+<line x1="930" y1="291" x2="1026" y2="291" stroke="currentColor" stroke-width="1.6"/>
+<line x1="930" y1="297" x2="1026" y2="297" stroke="currentColor" stroke-width="1.6"/>
+<line x1="930" y1="312" x2="1026" y2="312" stroke="currentColor" stroke-width="1.6"/>
+<text x="1070" y="305" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Participación total / parcial</text>
+<polygon points="1408,48 1434,84 1382,84" fill="var(--fondo)" stroke="currentColor" stroke-width="1.8"/>
+<text x="1408" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">d</text>
+<text x="1500" y="71" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Especialización (ISA), disyunta</text>
+<line x1="1360" y1="144" x2="1456" y2="144" stroke="currentColor" stroke-width="1.6"/>
+<text x="1382" y="136" text-anchor="start" font-size="14" font-weight="700" fill="currentColor">1</text>
+<text x="1430" y="136" text-anchor="start" font-size="14" font-weight="700" fill="currentColor">N</text>
+<text x="1500" y="149" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Cardinalidad 1:N / M:N</text>
+<rect x="1360" y="208" width="96" height="28" rx="3" fill="none" stroke="#199e70" stroke-width="2.5"/>
+<text x="1500" y="227" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Clase del estándar LADM-COL</text>
+<rect x="1360" y="286" width="96" height="28" rx="3" fill="none" stroke="#d95926" stroke-width="2.5"/>
+<text x="1500" y="305" text-anchor="start" font-size="14" font-weight="500" fill="currentColor">Extensión propia del trabajo</text>
+      </svg>
+    </div>
+    <figcaption><b>Leyenda.</b> Los dieciséis elementos de la notación de Chen que aparecen en el diagrama. El color distingue lo que viene del estándar LADM-COL de lo que es aporte propio de este trabajo.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="marco">
+      <svg id="fig1" viewBox="0 0 3320 1450" role="img" aria-label="Figura 1: núcleo del modelo LADM-COL en notación de Chen. El eje superior enlaza COL_INTERESADO con COL_DRR mediante la relación es titular de, y COL_DRR con COL_UNIDAD_ADMIN_BASICA mediante recae sobre. Bajo cada clase abstracta cuelga su especialización: comunidad y familia, derecho y restricción, predio y territorio. A la derecha, la topología del lindero; abajo, las fuentes.">
+        <line x1="803" y1="112.2" x2="998" y2="112.2" stroke="#199e70" stroke-width="1.6"/>
+<line x1="803" y1="105.8" x2="998" y2="105.8" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="865.4" cy="105" r="13" fill="var(--fondo)"/>
+<text x="865.4" y="110" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">1</text>
+<line x1="1417" y1="105.8" x2="1202" y2="105.8" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1417" y1="112.2" x2="1202" y2="112.2" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="1348.2" cy="105" r="13" fill="var(--fondo)"/>
+<text x="1348.2" y="110" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="1663" y1="112.2" x2="1838" y2="112.2" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1663" y1="105.8" x2="1838" y2="105.8" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="1719" cy="105" r="13" fill="var(--fondo)"/>
+<text x="1719" y="110" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="2257" y1="109" x2="2042" y2="109" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2188.2" cy="105" r="13" fill="var(--fondo)"/>
+<text x="2188.2" y="110" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">1</text>
+<line x1="845.8040665488536" y1="477.36222343969735" x2="746.1781344276036" y2="644.5914666432242" stroke="#d95926" stroke-width="1.6"/>
+<line x1="851.3023164298697" y1="480.63777656030265" x2="751.6763843086197" y2="647.8670197638295" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="816.6728932105617" cy="528.5133578251285" r="13" fill="var(--fondo)"/>
+<text x="816.6728932105617" y="533.5133578251285" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="507.68406029254464" y1="481.3739957650615" x2="697.9729488861099" y2="653.3658758400147" stroke="#d95926" stroke-width="1.6"/>
+<line x1="511.97551417554047" y1="476.6260042349385" x2="702.2644027691056" y2="648.6178843098917" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="570.7222315839834" cy="530.037401623985" r="13" fill="var(--fondo)"/>
+<text x="570.7222315839834" y="535.037401623985" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="466.8" y1="479" x2="466.8" y2="658" stroke="#199e70" stroke-width="1.6"/>
+<line x1="473.2" y1="479" x2="473.2" y2="658" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="470" cy="532.28" r="13" fill="var(--fondo)"/>
+<text x="470" y="537.28" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">1</text>
+<line x1="473.2" y1="897" x2="473.2" y2="738" stroke="#199e70" stroke-width="1.6"/>
+<line x1="466.8" y1="897" x2="466.8" y2="738" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="470" cy="842.12" r="13" fill="var(--fondo)"/>
+<text x="470" y="847.12" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<path d="M 2130 429 L 2085 429 L 2048.830442081701 436.5758254057079" fill="none" stroke="#d95926" stroke-width="1.6"/>
+<path d="M 2130 457 L 2085 457 L 2048.830442081701 449.4241745942921" fill="none" stroke="#d95926" stroke-width="1.6"/>
+<text x="2052" y="417" text-anchor="middle" font-size="13" font-weight="600" fill="#d95926">1 «matriz»</text>
+<text x="2048" y="483" text-anchor="middle" font-size="13" font-weight="600" fill="#d95926">N «parcela»</text>
+<line x1="1502.9701492537313" y1="1117" x2="1339.333675038442" y2="849.5940543311123" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="1450.6064775048387" cy="1027.4300973859558" r="13" fill="var(--fondo)"/>
+<text x="1450.6064775048387" y="1032.4300973859558" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">M</text>
+<line x1="1351.64" y1="479" x2="1323.5877437325905" y2="779.5598885793872" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="1342.663277994429" cy="571.1791643454039" r="13" fill="var(--fondo)"/>
+<text x="1342.663277994429" y="576.1791643454039" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="1908.4925108931504" y1="1118.8685743174185" x2="2065.9763162544095" y2="899.9276741810343" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1903.29696279106" y1="1115.1314256825815" x2="2060.780768152319" y2="896.1905255461973" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="1956.289554557708" cy="1042.938911956357" r="13" fill="var(--fondo)"/>
+<text x="1956.289554557708" y="1047.938911956357" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">M</text>
+<line x1="2233.0404563248126" y1="477.84186574271274" x2="2095.1942074638223" y2="832.9003855361723" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2239.006602498717" y1="480.15813425728726" x2="2101.1603536377265" y2="835.2166540507469" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2167.1004049812695" cy="652.5292598967299" r="13" fill="var(--fondo)"/>
+<text x="2167.1004049812695" y="657.5292598967299" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="2273.4246575342468" y1="479" x2="2421.388906825079" y2="706.3976883838058" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2320.773217307313" cy="547.7672602828178" r="13" fill="var(--fondo)"/>
+<text x="2320.773217307313" y="552.7672602828178" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">1</text>
+<line x1="2656.961793768224" y1="729.2091833126574" x2="2519.8478269365023" y2="730.8463650061705" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2657.038206231776" y1="735.6087271351039" x2="2519.924239400054" y2="737.245908828617" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2613.123530613849" cy="728.9328533658048" r="13" fill="var(--fondo)"/>
+<text x="2613.123530613849" y="733.9328533658048" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="2262.8571428571427" y1="479" x2="2428.6196549137285" y2="943.1350337584396" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2315.90114671525" cy="623.5232108027006" r="13" fill="var(--fondo)"/>
+<text x="2315.90114671525" y="628.5232108027006" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">1</text>
+<line x1="2656.9629010441645" y1="969.284273030198" x2="2519.908673594382" y2="970.873307551355" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2657.0370989558355" y1="975.683842911831" x2="2519.982871506053" y2="977.2728774329879" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2613.1426472160697" cy="968.9925490177848" r="13" fill="var(--fondo)"/>
+<text x="2613.1426472160697" y="973.9925490177848" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="2258.860103626943" y1="479" x2="2431.8039639434696" y2="1181.6982113913612" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2314.2021389282313" cy="699.8634276452356" r="13" fill="var(--fondo)"/>
+<text x="2314.2021389282313" y="704.8634276452356" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">1</text>
+<line x1="2656.961793768224" y1="1209.2091833126574" x2="2519.8478269365023" y2="1210.8463650061706" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2657.038206231776" y1="1215.608727135104" x2="2519.924239400054" y2="1217.245908828617" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2613.123530613849" cy="1208.932853365805" r="13" fill="var(--fondo)"/>
+<text x="2613.123530613849" y="1213.932853365805" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<polygon points="670,230 704,278 636,278" fill="var(--fondo)" stroke="#199e70" stroke-width="2.2"/>
+<text x="670" y="267" text-anchor="middle" font-size="14" font-weight="700" fill="#199e70">d</text>
+<line x1="660" y1="138" x2="660" y2="228" stroke="#199e70" stroke-width="1.6"/>
+<line x1="660" y1="228" x2="670" y2="228" stroke="#199e70" stroke-width="1.6"/>
+<line x1="670" y1="278" x2="670" y2="304" stroke="#199e70" stroke-width="1.6"/>
+<line x1="470" y1="304" x2="870" y2="304" stroke="#199e70" stroke-width="1.6"/>
+<line x1="470" y1="304" x2="470" y2="410" stroke="#199e70" stroke-width="1.6"/>
+<line x1="870" y1="304" x2="870" y2="410" stroke="#199e70" stroke-width="1.6"/>
+<text x="728" y="260" text-anchor="start" font-size="12" font-weight="600" fill="#199e70">ISA</text>
+<polygon points="1545,230 1579,278 1511,278" fill="var(--fondo)" stroke="#199e70" stroke-width="2.2"/>
+<text x="1545" y="267" text-anchor="middle" font-size="14" font-weight="700" fill="#199e70">d</text>
+<line x1="1540" y1="138" x2="1540" y2="228" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1540" y1="228" x2="1545" y2="228" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1545" y1="278" x2="1545" y2="304" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1355" y1="304" x2="1735" y2="304" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1355" y1="304" x2="1355" y2="410" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1735" y1="304" x2="1735" y2="410" stroke="#199e70" stroke-width="1.6"/>
+<text x="1603" y="260" text-anchor="start" font-size="12" font-weight="600" fill="#199e70">ISA</text>
+<polygon points="2422,230 2456,278 2388,278" fill="var(--fondo)" stroke="#199e70" stroke-width="2.2"/>
+<text x="2422" y="267" text-anchor="middle" font-size="14" font-weight="700" fill="#199e70">d</text>
+<line x1="2415" y1="138" x2="2415" y2="228" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2415" y1="228" x2="2422" y2="228" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2422" y1="278" x2="2422" y2="304" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2250" y1="304" x2="2595" y2="304" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2250" y1="304" x2="2250" y2="410" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2595" y1="304" x2="2595" y2="410" stroke="#199e70" stroke-width="1.6"/>
+<text x="2480" y="260" text-anchor="start" font-size="12" font-weight="600" fill="#199e70">ISA</text>
+<polygon points="1680,940 1714,988 1646,988" fill="var(--fondo)" stroke="#199e70" stroke-width="2.2"/>
+<text x="1680" y="977" text-anchor="middle" font-size="14" font-weight="700" fill="#199e70">d</text>
+<line x1="1680" y1="888" x2="1680" y2="938" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1680" y1="988" x2="1680" y2="1014" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1525" y1="1014" x2="1880" y2="1014" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1525" y1="1014" x2="1525" y2="1120" stroke="#199e70" stroke-width="1.6"/>
+<line x1="1880" y1="1014" x2="1880" y2="1120" stroke="#199e70" stroke-width="1.6"/>
+<text x="1738" y="970" text-anchor="start" font-size="12" font-weight="600" fill="#199e70">ISA</text>
+<line x1="327" y1="407.8771929824561" x2="185" y2="373" stroke="#199e70" stroke-width="1.4"/>
+<line x1="327" y1="455.1186440677966" x2="175" y2="468" stroke="#199e70" stroke-width="1.4"/>
+<line x1="417.38461538461536" y1="479" x2="280" y2="573" stroke="#199e70" stroke-width="1.4"/>
+<line x1="466" y1="479" x2="450" y2="623" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1003" y1="409.75" x2="1150" y2="373" stroke="#d95926" stroke-width="1.4"/>
+<line x1="952.9565217391305" y1="479" x2="1135" y2="558" stroke="#d95926" stroke-width="1.4"/>
+<line x1="864.8571428571429" y1="479" x2="850" y2="583" stroke="#d95926" stroke-width="1.4"/>
+<line x1="1299.8" y1="407" x2="1125" y2="293" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1358.375" y1="407" x2="1370" y2="283" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1739.5" y1="407" x2="1755" y2="283" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2219.625" y1="407" x2="2115" y2="283" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2279.25" y1="407" x2="2380" y2="283" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2201.657142857143" y1="479" x2="2015" y2="618" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2245.245283018868" y1="479" x2="2215" y2="708" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2252.181818181818" y1="479" x2="2260" y2="608" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2294.5263157894738" y1="479" x2="2485" y2="633" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2604" y1="407" x2="2635" y2="283" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2743" y1="460.26666666666665" x2="2895" y2="478" stroke="#199e70" stroke-width="1.4"/>
+<line x1="327" y1="952.953488372093" x2="255" y2="963" stroke="#199e70" stroke-width="1.4"/>
+<line x1="255" y1="963" x2="215" y2="823" stroke="#199e70" stroke-width="1.2"/>
+<line x1="255" y1="963" x2="115" y2="905" stroke="#199e70" stroke-width="1.2"/>
+<line x1="255" y1="963" x2="115" y2="1021" stroke="#199e70" stroke-width="1.2"/>
+<line x1="255" y1="963" x2="215" y2="1103" stroke="#199e70" stroke-width="1.2"/>
+<line x1="475.625" y1="969" x2="495" y2="1093" stroke="#199e70" stroke-width="1.4"/>
+<line x1="613" y1="911.4150943396227" x2="735" y2="893" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2893" y1="704.5102040816327" x2="3020" y2="676" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2893" y1="749.88" x2="3025" y2="771" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2785.3478260869565" y1="697" x2="2810" y2="616" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2913" y1="956.2307692307693" x2="3045" y2="941" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2913" y1="1002.121568627451" x2="3040" y2="1033" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2893" y1="1198.7083333333333" x2="3015" y2="1186" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2893" y1="1243.7510204081632" x2="3020" y2="1279" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1397" y1="1137.9411764705883" x2="1270" y2="1123" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1397" y1="1185.391836734694" x2="1280" y2="1215" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1511.5" y1="1189" x2="1465" y2="1313" stroke="#199e70" stroke-width="1.4"/>
+<line x1="1893.5" y1="1189" x2="1940" y2="1313" stroke="#199e70" stroke-width="1.4"/>
+<ellipse cx="185" cy="373" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="185" y="378" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">id</text>
+<ellipse cx="175" cy="468" rx="91.2" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="175" y="473" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nombre_comunidad</text>
+<ellipse cx="280" cy="573" rx="81.8" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="280" y="578" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">tipo_comunidad</text>
+<ellipse cx="450" cy="623" rx="67.7" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="450" y="628" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nº_personas</text>
+<ellipse cx="1150" cy="373" rx="56" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="1150" y="378" text-anchor="middle" font-size="13" font-weight="700" fill="#d95926" text-decoration="underline">id</text>
+<ellipse cx="1135" cy="558" rx="95.9" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="1135" y="563" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">origen_asignacion</text>
+<ellipse cx="850" cy="583" rx="67.7" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="850" y="588" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">nº_personas</text>
+<ellipse cx="1125" cy="293" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1125" y="298" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">id</text>
+<ellipse cx="1370" cy="283" rx="72.4" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1370" y="288" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">tipo_derecho</text>
+<ellipse cx="1755" cy="283" rx="91.2" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1755" y="288" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">tipo_restriccion</text>
+<ellipse cx="2115" cy="283" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2115" y="288" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">id</text>
+<ellipse cx="2380" cy="283" rx="81.8" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2380" y="288" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">numero_predial</text>
+<ellipse cx="2015" cy="618" rx="86.5" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2015" y="623" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">area_acto_admin</text>
+<ellipse cx="2215" cy="708" rx="72.4" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="2215" y="713" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">area_real_ha</text>
+<ellipse cx="2260" cy="608" rx="81.8" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2260" y="613" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">geom_perimetro</text>
+<ellipse cx="2485" cy="633" rx="69" ry="29" fill="none" stroke="#199e70" stroke-width="1.5"/>
+<ellipse cx="2485" cy="633" rx="63" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2485" y="638" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">puntos_gps</text>
+<ellipse cx="2635" cy="283" rx="95.9" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2635" y="288" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nombre_territorio</text>
+<ellipse cx="2895" cy="478" rx="100.60000000000001" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2895" y="483" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">tipo_procedimiento</text>
+<ellipse cx="215" cy="823" rx="77.1" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="215" y="828" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">primer_nombre</text>
+<ellipse cx="115" cy="905" rx="81.8" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="115" y="910" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">segundo_nombre</text>
+<ellipse cx="115" cy="1021" rx="86.5" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="115" y="1026" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">primer_apellido</text>
+<ellipse cx="215" cy="1103" rx="91.2" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="215" y="1108" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">segundo_apellido</text>
+<ellipse cx="255" cy="963" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="255" y="968" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nombre</text>
+<ellipse cx="495" cy="1093" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="495" y="1098" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">cargo</text>
+<ellipse cx="735" cy="893" rx="72.4" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="735" y="898" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nº_documento</text>
+<ellipse cx="3020" cy="676" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="3020" y="681" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">t_id</text>
+<ellipse cx="3025" cy="771" rx="67.7" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="3025" y="776" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">exactitud_h</text>
+<ellipse cx="2810" cy="616" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2810" y="621" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">posicion</text>
+<ellipse cx="3045" cy="941" rx="63" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="3045" y="946" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">longitud_m</text>
+<ellipse cx="3040" cy="1033" rx="77.1" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="3040" y="1038" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">interpolacion</text>
+<ellipse cx="3015" cy="1186" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="3015" y="1191" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">area_m2</text>
+<ellipse cx="3020" cy="1279" rx="67.7" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="3020" y="1284" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">perimetro_m</text>
+<ellipse cx="1270" cy="1123" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1270" y="1128" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">id</text>
+<ellipse cx="1280" cy="1215" rx="77.1" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1280" y="1220" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nº_acto_admin</text>
+<ellipse cx="1465" cy="1313" rx="86.5" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1465" y="1318" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">fecha_documento</text>
+<ellipse cx="1940" cy="1313" rx="95.9" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="1940" y="1318" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">metodo_produccion</text>
+<polygon points="1100,73 1200,109 1100,145 1000,109" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="1100" y="114" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">es titular de</text>
+<polygon points="1940,73 2040,109 1940,145 1840,109" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="1940" y="114" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">recae sobre</text>
+<polygon points="730,640 820,678 730,716 640,678" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="730" y="683" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">pertenece a</text>
+<polygon points="470,653 569,698 470,743 371,698" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<polygon points="470,660 560,698 470,736 380,698" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="470" y="703" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">representa</text>
+<polygon points="1980,405 2060,443 1980,481 1900,443" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="1980" y="448" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">contiene</text>
+<polygon points="1320,780 1410,818 1320,856 1230,818" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="1320" y="823" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">sustenta</text>
+<polygon points="2085,830 2170,868 2085,906 2000,868" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="2085" y="873" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">produce</text>
+<polygon points="2440,693 2529,735 2440,777 2351,735" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<polygon points="2440,700 2520,735 2440,770 2360,735" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="2440" y="740" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">tiene</text>
+<polygon points="2440,933 2529,975 2440,1017 2351,975" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<polygon points="2440,940 2520,975 2440,1010 2360,975" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="2440" y="980" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">tiene</text>
+<polygon points="2440,1173 2529,1215 2440,1257 2351,1215" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<polygon points="2440,1180 2520,1215 2440,1250 2360,1215" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="2440" y="1220" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">tiene</text>
+<rect x="520" y="80" width="280" height="58" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="660" y="107" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_INTERESADO</text>
+<text x="660" y="132" text-anchor="middle" font-size="12" font-weight="500" fill="#199e70">‹abstracta›</text>
+<rect x="1420" y="80" width="240" height="58" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1540" y="107" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_DRR</text>
+<text x="1540" y="132" text-anchor="middle" font-size="12" font-weight="500" fill="#199e70">‹abstracta›</text>
+<rect x="2260" y="80" width="310" height="58" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="2415" y="97" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_UNIDAD_ADMIN</text>
+<text x="2415" y="117" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">BASICA</text>
+<text x="2415" y="132" text-anchor="middle" font-size="12" font-weight="500" fill="#199e70">‹abstracta›</text>
+<rect x="330" y="410" width="280" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="470" y="438" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_INTERESADO_</text>
+<text x="470" y="458" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COMUNIDAD</text>
+<rect x="740" y="410" width="260" height="66" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="870" y="438" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">TPC_INTERESADO_</text>
+<text x="870" y="458" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">FAMILIA</text>
+<polygon points="1355,368 1518,443 1355,518 1192,443" fill="none" stroke="#199e70" stroke-width="2.2"/>
+<rect x="1240" y="410" width="230" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="1355" y="448" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_DERECHO</text>
+<rect x="1620" y="410" width="230" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="1735" y="448" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_RESTRICCION</text>
+<rect x="2130" y="410" width="240" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2250" y="448" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_PREDIO</text>
+<rect x="2450" y="410" width="290" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2595" y="438" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_TERRITORIO_</text>
+<text x="2595" y="458" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">PROP_COLECTIVA</text>
+<rect x="324" y="894" width="292" height="78" rx="4" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<rect x="330" y="900" width="280" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="470" y="928" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_REPRESENTANTE_</text>
+<text x="470" y="948" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">LEGAL</text>
+<rect x="1560" y="830" width="240" height="58" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1680" y="857" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_FUENTE</text>
+<text x="1680" y="882" text-anchor="middle" font-size="12" font-weight="500" fill="#199e70">‹abstracta›</text>
+<rect x="1400" y="1120" width="250" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="1525" y="1148" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_FUENTE_</text>
+<text x="1525" y="1168" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">ADMINISTRATIVA</text>
+<rect x="1760" y="1120" width="240" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="1880" y="1148" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_FUENTE_</text>
+<text x="1880" y="1168" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">ESPACIAL</text>
+<rect x="2654" y="694" width="242" height="74" rx="4" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<rect x="2660" y="700" width="230" height="62" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2775" y="736" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_PUNTO</text>
+<rect x="2654" y="934" width="262" height="74" rx="4" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<rect x="2660" y="940" width="250" height="62" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2785" y="966" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_CADENA</text>
+<text x="2785" y="986" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">DE_LIMITE</text>
+<rect x="2654" y="1174" width="242" height="74" rx="4" fill="none" stroke="#199e70" stroke-width="1.9"/>
+<rect x="2660" y="1180" width="230" height="62" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2775" y="1206" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_CARAS</text>
+<text x="2775" y="1226" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">LINDERO</text>
+      </svg>
+    </div>
+    <figcaption>
+      <b>Figura 1 — Núcleo del modelo.</b> El eje horizontal superior es LADM entero en una frase:
+      <em>un interesado es titular de un derecho, y ese derecho recae sobre una unidad administrativa básica</em>.
+      Debajo de cada clase abstracta cuelga su especialización. A la derecha, la descomposición del
+      lindero en vértices, tramos y cara; abajo, las fuentes que sustentan el derecho y producen la
+      geometría.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <div class="marco">
+      <svg id="fig2" viewBox="0 0 2960 890" role="img" aria-label="Figura 2: extensiones propias y agrupaciones. De la comunidad cuelgan la historia del territorio, la validación comunitaria, las transcripciones y la agrupación de interesados con su atributo de participación. Del predio cuelgan el uso, las fotografías, la dirección y la agrupación de unidades espaciales.">
+        <line x1="365.96610169491527" y1="159" x2="278.3333333333333" y2="383.7971014492754" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="337.92361581920903" cy="226.9350724637681" r="13" fill="var(--fondo)"/>
+<text x="337.92361581920903" y="231.9350724637681" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">M</text>
+<line x1="268.2" y1="637" x2="268.2" y2="458" stroke="#199e70" stroke-width="1.6"/>
+<line x1="261.8" y1="637" x2="261.8" y2="458" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="265" cy="575.72" r="13" fill="var(--fondo)"/>
+<text x="265" y="580.72" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="415.75757575757575" y1="159" x2="649.622756528396" y2="394.450707420114" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="490.59443360423825" cy="230.34422637443646" r="13" fill="var(--fondo)"/>
+<text x="490.59443360423825" y="235.34422637443646" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="678.2" y1="637" x2="678.2" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<line x1="671.8" y1="637" x2="671.8" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="675" cy="575.4" r="13" fill="var(--fondo)"/>
+<text x="675" y="580.4" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="455.1515151515151" y1="159" x2="959.0852621004941" y2="400.40052071588184" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="616.4103141751884" cy="232.2481666290822" r="13" fill="var(--fondo)"/>
+<text x="616.4103141751884" y="237.2481666290822" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="1003.2" y1="637" x2="1003.2" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<line x1="996.8" y1="637" x2="996.8" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="1000" cy="575.4" r="13" fill="var(--fondo)"/>
+<text x="1000" y="580.4" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="495.75757575757575" y1="159" x2="1284.7475234576782" y2="404.37174289730933" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="748.2343590216085" cy="233.51895772713897" r="13" fill="var(--fondo)"/>
+<text x="748.2343590216085" y="238.51895772713897" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="1338.2" y1="637" x2="1338.2" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<line x1="1331.8" y1="637" x2="1331.8" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="1335" cy="575.4" r="13" fill="var(--fondo)"/>
+<text x="1335" y="580.4" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="2055.757575757576" y1="159" x2="1764.8631303375355" y2="395.700411752745" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="1962.6713532231631" cy="230.74413176087842" r="13" fill="var(--fondo)"/>
+<text x="1962.6713532231631" y="235.74413176087842" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="1733.8766561149923" y1="637.0637323760625" x2="1737.468505229297" y2="456.7529068379643" stroke="#d95926" stroke-width="1.6"/>
+<line x1="1727.4779255583144" y1="636.9362676239375" x2="1731.0697746726191" y2="456.6254420858392" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="1731.826682553231" cy="575.3005358278085" r="13" fill="var(--fondo)"/>
+<text x="1731.826682553231" y="580.3005358278085" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="2092.7272727272725" y1="159" x2="2046.8833529348872" y2="385.92740297230836" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="2078.0572183937093" cy="227.61676895113868" r="13" fill="var(--fondo)"/>
+<text x="2078.0572183937093" y="232.61676895113868" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="2043.2" y1="637" x2="2043.2" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<line x1="2036.8" y1="637" x2="2036.8" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="2040" cy="575.4" r="13" fill="var(--fondo)"/>
+<text x="2040" y="580.4" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="2130.909090909091" y1="159" x2="2331.729460792652" y2="392.8966660996768" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="2195.1716092718307" cy="229.84693315189656" r="13" fill="var(--fondo)"/>
+<text x="2195.1716092718307" y="234.84693315189656" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">1</text>
+<line x1="2358.2" y1="637" x2="2358.2" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<line x1="2351.8" y1="637" x2="2351.8" y2="457" stroke="#d95926" stroke-width="1.6"/>
+<circle cx="2355" cy="575.4" r="13" fill="var(--fondo)"/>
+<text x="2355" y="580.4" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">N</text>
+<line x1="2171.8084319928716" y1="161.87167523426348" x2="2655.412496607787" y2="399.64367366993025" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2174.6322459732305" y1="156.12832476573652" x2="2658.236310588146" y2="393.9003232014033" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2327.973639659824" cy="231.08703949941338" r="13" fill="var(--fondo)"/>
+<text x="2327.973639659824" y="236.08703949941338" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">M</text>
+<line x1="2703.2" y1="637" x2="2703.2" y2="458" stroke="#199e70" stroke-width="1.6"/>
+<line x1="2696.8" y1="637" x2="2696.8" y2="458" stroke="#199e70" stroke-width="1.6"/>
+<circle cx="2700" cy="575.72" r="13" fill="var(--fondo)"/>
+<text x="2700" y="580.72" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">N</text>
+<line x1="237" y1="132.86206896551724" x2="90" y2="143" stroke="#199e70" stroke-width="1.4"/>
+<line x1="2223" y1="133.25" x2="2340" y2="143" stroke="#199e70" stroke-width="1.4"/>
+<line x1="267.51851851851853" y1="705" x2="275" y2="806" stroke="#199e70" stroke-width="1.4"/>
+<line x1="664.925925925926" y1="705" x2="635" y2="806" stroke="#d95926" stroke-width="1.4"/>
+<line x1="1007.5555555555555" y1="705" x2="1030" y2="806" stroke="#d95926" stroke-width="1.4"/>
+<line x1="1345.0740740740741" y1="705" x2="1375" y2="806" stroke="#d95926" stroke-width="1.4"/>
+<line x1="1735.037037037037" y1="705" x2="1750" y2="806" stroke="#d95926" stroke-width="1.4"/>
+<line x1="2034.962962962963" y1="705" x2="2020" y2="806" stroke="#d95926" stroke-width="1.4"/>
+<line x1="2362.5555555555557" y1="705" x2="2385" y2="806" stroke="#d95926" stroke-width="1.4"/>
+<line x1="2705.037037037037" y1="705" x2="2720" y2="806" stroke="#199e70" stroke-width="1.4"/>
+<line x1="357" y1="418" x2="495" y2="418" stroke="#199e70" stroke-width="1.4"/>
+<ellipse cx="90" cy="143" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="90" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">id</text>
+<ellipse cx="2340" cy="143" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2340" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#199e70" text-decoration="underline">id</text>
+<ellipse cx="275" cy="806" rx="56" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="275" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nombre</text>
+<ellipse cx="635" cy="806" rx="67.7" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="635" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">descripcion</text>
+<ellipse cx="1030" cy="806" rx="77.1" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="1030" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">observaciones</text>
+<ellipse cx="1375" cy="806" rx="77.1" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="1375" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">transcripcion</text>
+<ellipse cx="1750" cy="806" rx="56" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="1750" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">tipo_uso</text>
+<ellipse cx="2020" cy="806" rx="72.4" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="2020" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">ruta_archivo</text>
+<ellipse cx="2385" cy="806" rx="56" ry="23" fill="var(--fondo)" stroke="#d95926" stroke-width="1.8"/>
+<text x="2385" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#d95926">vereda</text>
+<ellipse cx="2720" cy="806" rx="91.2" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8"/>
+<text x="2720" y="811" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">nivel_jerarquico</text>
+<ellipse cx="495" cy="418" rx="77.1" ry="23" fill="var(--fondo)" stroke="#199e70" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="495" y="423" text-anchor="middle" font-size="13" font-weight="500" fill="#199e70">participacion</text>
+<polygon points="265,380 355,418 265,456 175,418" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="265" y="423" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">agrupa</text>
+<polygon points="675,378 764,420 675,462 586,420" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<polygon points="675,385 755,420 675,455 595,420" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="675" y="425" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">narra</text>
+<polygon points="1000,378 1094,420 1000,462 906,420" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<polygon points="1000,385 1085,420 1000,455 915,420" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="1000" y="425" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">valida</text>
+<polygon points="1335,378 1429,420 1335,462 1241,420" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<polygon points="1335,385 1420,420 1335,455 1250,420" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="1335" y="425" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">dicta</text>
+<polygon points="1735,378 1829,420 1735,462 1641,420" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<polygon points="1735,385 1820,420 1735,455 1650,420" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="1735" y="425" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">declara</text>
+<polygon points="2040,378 2134,420 2040,462 1946,420" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<polygon points="2040,385 2125,420 2040,455 1955,420" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="2040" y="425" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">ilustra</text>
+<polygon points="2355,378 2449,420 2355,462 2261,420" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<polygon points="2355,385 2440,420 2355,455 2270,420" fill="var(--fondo)" stroke="#d95926" stroke-width="2.4"/>
+<text x="2355" y="425" text-anchor="middle" font-size="14" font-weight="600" fill="#d95926">ubica</text>
+<polygon points="2700,380 2790,418 2700,456 2610,418" fill="var(--fondo)" stroke="#199e70" stroke-width="2.4"/>
+<text x="2700" y="423" text-anchor="middle" font-size="14" font-weight="600" fill="#199e70">reúne</text>
+<rect x="240" y="90" width="280" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="380" y="118" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_INTERESADO_</text>
+<text x="380" y="138" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COMUNIDAD</text>
+<rect x="1980" y="90" width="240" height="66" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2100" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">TPC_PREDIO</text>
+<rect x="130" y="640" width="270" height="62" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="265" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_AGRUPACION_</text>
+<text x="265" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">INTERESADOS</text>
+<rect x="554" y="634" width="242" height="74" rx="4" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<rect x="560" y="640" width="230" height="62" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="675" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">EXT_HISTORIA</text>
+<text x="675" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">TERRITORIO</text>
+<rect x="874" y="634" width="252" height="74" rx="4" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<rect x="880" y="640" width="240" height="62" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="1000" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">EXT_VALIDACION</text>
+<text x="1000" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">COMUNITARIA</text>
+<rect x="1204" y="634" width="262" height="74" rx="4" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<rect x="1210" y="640" width="250" height="62" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="1335" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">EXT_TRANSCRIPCION</text>
+<text x="1335" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">RESPUESTA</text>
+<rect x="1614" y="634" width="232" height="74" rx="4" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<rect x="1620" y="640" width="220" height="62" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="1730" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">EXT_USO</text>
+<text x="1730" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">TERRITORIO</text>
+<rect x="1924" y="634" width="232" height="74" rx="4" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<rect x="1930" y="640" width="220" height="62" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="2040" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">EXT_FOTO</text>
+<text x="2040" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">REGISTRO</text>
+<rect x="2234" y="634" width="242" height="74" rx="4" fill="none" stroke="#d95926" stroke-width="1.9"/>
+<rect x="2240" y="640" width="230" height="62" rx="4" fill="var(--fondo)" stroke="#d95926" stroke-width="2.5"/>
+<text x="2355" y="676" text-anchor="middle" font-size="15" font-weight="700" fill="#d95926">EXT_DIRECCION</text>
+<rect x="2560" y="640" width="280" height="62" rx="4" fill="var(--fondo)" stroke="#199e70" stroke-width="2.5"/>
+<text x="2700" y="666" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">COL_AGRUPACION_</text>
+<text x="2700" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#199e70">UNID_ESPACIALES</text>
+      </svg>
+    </div>
+    <figcaption>
+      <b>Figura 2 — Extensiones propias y agrupaciones.</b> Todo lo que cuelga de la comunidad queda a
+      la izquierda y todo lo que cuelga del predio a la derecha. Las dos entidades del centro se
+      repiten de la figura 1 para no cortar la lectura. La relación <em>agrupa</em> lleva su propio
+      atributo, <em>participacion</em>: es una fracción, y en la base es una columna calculada.
+    </figcaption>
+  </figure>
+
+  <h2>Cómo leer el diagrama</h2>
+  <div class="nota">
+    <p style="margin:0 0 10px"><b>El eje horizontal superior es el modelo.</b> Todo lo demás cuelga de él.
+    Un interesado es titular de un derecho, y ese derecho recae sobre una unidad administrativa básica.
+    Esa frase es LADM entero; el resto del diagrama dice quién puede ser interesado, qué clases de
+    derecho existen y qué puede ser una unidad.</p>
+    <p style="margin:0 0 10px"><b>La tripleta se cumple dos veces.</b> Por la rama izquierda, la comunidad
+    es titular de propiedad colectiva sobre el territorio. Por la misma estructura, una familia es titular
+    de uso y usufructo sobre su parcela — que es un <code>TPC_PREDIO</code> contenido en otro, de ahí la
+    relación recursiva <em>contiene</em>.</p>
+    <p style="margin:0"><b>Las entidades de doble borde no existen solas.</b> Un representante legal, un
+    vértice del lindero o una fotografía carecen de sentido sin la comunidad o el predio del que dependen,
+    y desaparecen con él: en la base son <code>ON DELETE CASCADE</code>.</p>
+  </div>
+
+  <h2>Correspondencia con el esquema físico</h2>
+  <table>
+    <tr><th>Elemento de Chen</th><th>Cómo se implementó en PostgreSQL</th></tr>
+    <tr><td>Entidad débil</td><td>Tabla con llave foránea <code>NOT NULL</code> y <code>ON DELETE CASCADE</code> hacia su entidad propietaria</td></tr>
+    <tr><td>Participación total</td><td>Llave foránea declarada <code>NOT NULL</code></td></tr>
+    <tr><td>Relación M:N</td><td>Tabla puente con <code>UNIQUE</code> sobre el par de llaves — <code>col_miembros</code>, <code>col_ue_agrupacion</code>, <code>col_uefuente</code></td></tr>
+    <tr><td>Atributo derivado</td><td>Columna <code>GENERATED ALWAYS AS</code> (<code>participacion</code>) o calculada con PostGIS al consultar (<code>ST_Area</code>, <code>ST_Length</code>)</td></tr>
+    <tr><td>Atributo multivaluado</td><td>Columna <code>JSONB</code> con el arreglo de lecturas GPS del recorrido</td></tr>
+    <tr><td>Atributo compuesto</td><td>Columnas separadas para cada componente del nombre, como exige LADM</td></tr>
+    <tr><td>Especialización ISA</td><td>Tablas hijas con llave foránea hacia la comunidad y discriminante en columna con catálogo</td></tr>
+    <tr><td>Dominio de atributo</td><td>Tabla de catálogo con <code>ilicode</code> y llave foránea — 22 catálogos, 30 llaves</td></tr>
+  </table>
+
+  <p class="sub" style="margin-top:26px;font-size:.82rem">
+    Generado desde el esquema real de la base, no desde la documentación.
+  </p>
+
+</div>
+</body>
+</html>

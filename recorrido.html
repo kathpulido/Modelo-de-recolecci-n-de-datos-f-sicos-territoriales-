@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0f5132"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Recorrido GPS del Lindero — Registro Catastral</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{
+  --verde-900:#0f5132; --verde-700:#15803d; --verde-600:#1e9750; --verde-500:#22a85c; --verde-100:#e7f6ec;
+  --ambar-500:#d97706; --ambar-100:#fef3c7;
+  --rojo-600:#dc2626; --rojo-100:#fee2e2;
+  --azul-600:#2563eb;
+  --tinta:#132a1e; --gris:#5b6b63;
+  --superficie:#ffffff; --fondo:#f4faf6; --borde:#dce8e0;
+  --sombra-lg:0 -8px 24px rgba(15,42,30,.12), 0 -2px 8px rgba(15,42,30,.06);
+  --radio:16px; --radio-sm:10px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+  background:var(--fondo);color:var(--tinta);display:flex;flex-direction:column;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+
+header{
+  background:linear-gradient(135deg,var(--verde-900),var(--verde-700) 70%);
+  color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 2px 14px rgba(15,81,50,.35);z-index:600;position:relative;
+}
+header::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 90% -20%,rgba(255,255,255,.14),transparent 55%);pointer-events:none}
+#icono-app{
+  width:38px;height:38px;flex-shrink:0;border-radius:11px;background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;font-size:1.15rem;
+  border:1px solid rgba(255,255,255,.25);
+}
+#titulos{flex:1;min-width:0}
+header h1{font-size:.95rem;font-weight:700;line-height:1.3;letter-spacing:-.01em}
+header p{font-size:.71rem;opacity:.88;margin-top:1px}
+#estado{display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;padding:6px 10px;border-radius:99px;white-space:nowrap;flex-shrink:0}
+#estado.on{background:rgba(16,185,129,.22);color:#d1fae5}
+#estado.off{background:rgba(245,158,11,.25);color:#fef3c7}
+#dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.on #dot{background:#34d399}.off #dot{background:#fbbf24;animation:pulso 1.4s infinite}
+@keyframes pulso{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+#aviso{
+  background:var(--superficie);border-bottom:1px solid var(--borde);
+  padding:11px 14px;font-size:.78rem;color:var(--gris);line-height:1.5;display:flex;gap:9px;align-items:flex-start;
+}
+#aviso .ic{font-size:1rem;flex-shrink:0;margin-top:1px}
+#aviso b{color:var(--verde-700)}
+
+#mapa-wrap{flex:1;min-height:0;position:relative}
+#mapa{position:absolute;inset:0}
+
+#chip-viva{
+  position:absolute;top:12px;left:12px;z-index:450;background:var(--rojo-600);color:#fff;
+  padding:6px 12px 6px 9px;border-radius:99px;font-size:.72rem;font-weight:800;display:none;
+  align-items:center;gap:6px;box-shadow:0 3px 10px rgba(220,38,38,.35);
+}
+#chip-viva.activo{display:flex}
+#chip-viva .punto-rojo{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulso 1s infinite}
+
+#stats{display:flex;gap:1px;background:var(--borde);border-top:1px solid var(--borde)}
+.stat{flex:1;text-align:center;background:var(--superficie);padding:10px 6px}
+.stat b{display:block;font-size:1.08rem;color:var(--verde-700);font-weight:800;letter-spacing:-.01em}
+.stat span{font-size:.66rem;color:var(--gris);font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+
+#panel{
+  background:var(--superficie);border-top:1px solid var(--borde);
+  border-radius:var(--radio) var(--radio) 0 0;
+  padding:14px 16px calc(14px + var(--safe-b));box-shadow:var(--sombra-lg);z-index:550;position:relative;
+}
+#panel::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:99px;background:var(--borde)}
+.fila{display:flex;gap:10px;margin-top:6px}
+.btn{
+  flex:1;padding:14px;border:none;border-radius:12px;font-size:.88rem;font-weight:700;cursor:pointer;
+  font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:transform .12s,filter .12s;
+}
+.btn:active{transform:scale(.97)}
+.b-iniciar{background:linear-gradient(135deg,var(--rojo-600),#b91c1c);color:#fff;box-shadow:0 3px 10px rgba(220,38,38,.32)}
+.b-guardar{background:linear-gradient(135deg,var(--verde-600),var(--verde-700));color:#fff;box-shadow:0 3px 10px rgba(21,128,61,.35)}
+.b-guardar:disabled{background:#c7d1cb;box-shadow:none;cursor:not-allowed;color:#8a978f}
+.b-cancelar{background:var(--superficie);color:var(--rojo-600);border:1.5px solid var(--rojo-100);flex:0 0 auto;padding:14px 18px}
+.spinner{width:15px;height:15px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:girar .7s linear infinite;display:none}
+.b-guardar.cargando .spinner{display:inline-block}
+.b-guardar.cargando .txt-btn{display:none}
+@keyframes girar{to{transform:rotate(360deg)}}
+
+#msg{
+  margin-top:11px;font-size:.79rem;font-weight:600;text-align:left;padding:10px 12px;border-radius:11px;
+  display:none;align-items:flex-start;gap:8px;line-height:1.4;animation:entrar .25s ease-out;
+}
+@keyframes entrar{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+#msg .ic{font-size:1rem;flex-shrink:0;margin-top:1px}
+#msg.ok{display:flex;background:var(--verde-100);color:var(--verde-900)}
+#msg.pend{display:flex;background:var(--ambar-100);color:#92400e}
+#msg.err{display:flex;background:var(--rojo-100);color:#991b1b}
+
+#punto-actual{width:14px;height:14px;border-radius:50%;background:var(--azul-600);border:3px solid #fff;box-shadow:0 0 0 2px var(--azul-600)}
+.leaflet-control-attribution{font-size:.62rem!important}
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --fondo:#0d1712; --superficie:#152420; --borde:#25382f; --tinta:#eaf3ee; --gris:#93a49b;
+    --verde-100:#173a29;
+  }
+  .stat b{color:#8fe3ae}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div id="icono-app">🚶</div>
+  <div id="titulos">
+    <h1>Recorrido GPS del lindero</h1>
+    <p>Camine todo el borde del territorio con el celular encendido</p>
+  </div>
+  <div id="estado" class="on"><span id="dot"></span><span id="estado-txt">En línea</span></div>
+</header>
+
+<div id="aviso">
+  <span class="ic">🧭</span>
+  <span id="aviso-txt">Toque <b>"Iniciar recorrido"</b> y camine despacio todo el contorno del territorio, sin atajos. La app va marcando su camino en el mapa. Al terminar de rodear todo el lindero, toque <b>"Finalizar y guardar"</b>. La precisión típica del GPS es de 3 a 10 metros.</span>
+</div>
+
+<div id="mapa-wrap">
+  <div id="mapa"></div>
+  <div id="chip-viva"><span class="punto-rojo"></span> GRABANDO</div>
+</div>
+
+<div id="stats">
+  <div class="stat"><b id="s-puntos">0</b><span>Puntos GPS</span></div>
+  <div class="stat"><b id="s-distancia">0 m</b><span>Distancia</span></div>
+  <div class="stat"><b id="s-tiempo">00:00</b><span>Tiempo</span></div>
+</div>
+
+<div id="panel">
+  <div class="fila">
+    <button class="btn b-cancelar" id="btn-cancelar" style="display:none">✖️</button>
+    <button class="btn b-iniciar" id="btn-iniciar">▶️ Iniciar recorrido</button>
+    <button class="btn b-guardar" id="btn-guardar" style="display:none" disabled>
+      <span class="spinner"></span><span class="txt-btn">💾 Finalizar y guardar</span>
+    </button>
+  </div>
+  <div id="msg"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ============================================================
+   Recorrido GPS del perímetro — el declarante camina el lindero
+   con el teléfono y watchPosition() va registrando la traza.
+   Al finalizar se cierra el polígono automáticamente y se envía
+   a POST /api/perimetro identificado por el token de la URL.
+   ============================================================ */
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const EP     = `${location.origin}/api/perimetro`
+const LS_KEY = `perimetro_pendiente_${TOKEN}`
+// Si la persona ya compartió su ubicación por WhatsApp, el bot la manda
+// aquí mismo en el enlace — así no hace falta pedirle permiso de GPS al
+// navegador (que dentro del navegador propio de WhatsApp a veces ni
+// siquiera se puede pedir).
+const LAT_QS = params.get('lat')
+const LON_QS = params.get('lon')
+
+if (!TOKEN) {
+  document.getElementById('aviso-txt').innerHTML =
+    '⚠️ Este enlace no tiene un código de registro válido. Pida al sistema que le envíe el enlace de nuevo desde WhatsApp.'
+}
+
+const mapa = L.map('mapa', { zoomControl: true }).setView([4.5709, -74.2973], 6)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 20, attribution: '© OpenStreetMap'
+}).addTo(mapa)
+L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(mapa)
+
+const linea = L.polyline([], { color: '#15803d', weight: 4 }).addTo(mapa)
+let marcadorActual = null
+
+// Muestra un marcador "usted está aquí" apenas se abre la página —
+// no espera a que toque "Iniciar recorrido". Cuando arranque el
+// recorrido, watchPosition() reutiliza este mismo marcador.
+function colocarMarcadorActual(lat, lon, zoom) {
+  const ll = [lat, lon]
+  mapa.setView(ll, zoom || 17)
+  if (!marcadorActual) {
+    marcadorActual = L.marker(ll, {
+      icon: L.divIcon({ className: '', html: '<div id="punto-actual"></div>', iconSize: [14, 14] }),
+      interactive: false
+    }).addTo(mapa)
+  } else {
+    marcadorActual.setLatLng(ll)
+  }
+}
+
+function mostrarMiUbicacionInicial() {
+  if (!navigator.geolocation) {
+    mostrarMsg('pend', '📍', 'Este navegador no admite ubicación automática — puede iniciar el recorrido igual, solo sin el punto azul inicial.')
+    return
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => colocarMarcadorActual(pos.coords.latitude, pos.coords.longitude, 17),
+    err => {
+      // Antes esto fallaba en silencio. Ahora se avisa el motivo — el
+      // recorrido igual se puede iniciar normalmente con el botón, esto
+      // solo afecta el punto azul que se muestra antes de arrancar.
+      const motivo = err && err.code === 1
+        ? 'el navegador tiene bloqueado el permiso de ubicación para esta página'
+        : err && err.code === 2
+          ? 'no se pudo determinar la ubicación en este momento'
+          : 'se demoró demasiado en responder'
+      mostrarMsg('pend', '📍', `No se pudo mostrar su ubicación (${motivo}). Puede tocar "Iniciar recorrido" igual — ahí se vuelve a pedir el permiso.`)
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  )
+}
+
+const latInicial = parseFloat(LAT_QS)
+const lonInicial = parseFloat(LON_QS)
+if (LAT_QS !== null && LON_QS !== null && !isNaN(latInicial) && !isNaN(lonInicial)) {
+  // Ya tenemos la ubicación que la persona compartió por WhatsApp — se
+  // usa de una vez, sin pedir permiso al navegador.
+  colocarMarcadorActual(latInicial, lonInicial, 17)
+} else {
+  mostrarMiUbicacionInicial() // no había ubicación de WhatsApp — se intenta por GPS del navegador
+}
+
+let watchId = null
+let puntos  = []      // {lat, lng, acc, ts}
+let tInicio = null
+let timerId = null
+
+const DIST_MIN_M = 3 // metros mínimos entre puntos consecutivos para descartar ruido GPS en reposo
+
+function haversine(a, b) {
+  const R = 6378137
+  const toRad = g => g * Math.PI / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLng = toRad(b.lng - a.lng)
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+function areaGeodesica(latlngs) {
+  const n = latlngs.length
+  if (n < 3) return 0
+  const toRad = g => g * Math.PI / 180
+  let area = 0
+  for (let i = 0; i < n; i++) {
+    const p1 = latlngs[i]
+    const p2 = latlngs[(i + 1) % n]
+    area += (toRad(p2.lng) - toRad(p1.lng)) * (2 + Math.sin(toRad(p1.lat)) + Math.sin(toRad(p2.lat)))
+  }
+  return Math.abs(area * 6378137 * 6378137 / 2)
+}
+
+function distanciaTotal() {
+  let d = 0
+  for (let i = 1; i < puntos.length; i++) d += haversine(puntos[i - 1], puntos[i])
+  return d
+}
+
+function actualizarStats() {
+  document.getElementById('s-puntos').textContent = puntos.length
+  const d = distanciaTotal()
+  document.getElementById('s-distancia').textContent = d >= 1000 ? `${(d / 1000).toFixed(2)} km` : `${d.toFixed(0)} m`
+  document.getElementById('btn-guardar').disabled = puntos.length < 3
+}
+
+function actualizarTiempo() {
+  if (!tInicio) return
+  const s = Math.floor((Date.now() - tInicio) / 1000)
+  const mm = String(Math.floor(s / 60)).padStart(2, '0')
+  const ss = String(s % 60).padStart(2, '0')
+  document.getElementById('s-tiempo').textContent = `${mm}:${ss}`
+}
+
+function onNuevaPosicion(pos) {
+  const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy, ts: Date.now() }
+
+  const ultimo = puntos[puntos.length - 1]
+  if (ultimo && haversine(ultimo, p) < DIST_MIN_M) {
+    // el usuario está quieto o el ruido del GPS es menor al umbral: no se agrega
+  } else {
+    puntos.push(p)
+    linea.addLatLng([p.lat, p.lng])
+    actualizarStats()
+  }
+
+  if (!marcadorActual) {
+    marcadorActual = L.marker([p.lat, p.lng], {
+      icon: L.divIcon({ className: '', html: '<div id="punto-actual"></div>', iconSize: [14, 14] })
+    }).addTo(mapa)
+  } else {
+    marcadorActual.setLatLng([p.lat, p.lng])
+  }
+  mapa.panTo([p.lat, p.lng])
+}
+
+function onErrorPosicion(err) {
+  mostrarMsg('err', '⚠️', `No se pudo leer el GPS (${err.message}). Verifique que el permiso de ubicación esté activo.`)
+}
+
+function iniciarRecorrido() {
+  if (!navigator.geolocation) {
+    mostrarMsg('err', '⚠️', 'Este teléfono/navegador no soporta geolocalización.')
+    return
+  }
+  puntos = []
+  linea.setLatLngs([])
+  tInicio = Date.now()
+  timerId = setInterval(actualizarTiempo, 1000)
+  watchId = navigator.geolocation.watchPosition(onNuevaPosicion, onErrorPosicion, {
+    enableHighAccuracy: true, maximumAge: 0, timeout: 15000
+  })
+
+  document.getElementById('btn-iniciar').style.display = 'none'
+  document.getElementById('btn-guardar').style.display = 'flex'
+  document.getElementById('btn-cancelar').style.display = 'flex'
+  document.getElementById('chip-viva').classList.add('activo')
+  document.getElementById('aviso-txt').innerHTML = 'Recorrido en curso: camine todo el borde del territorio sin atajos. Cuando complete la vuelta, toque <b>"Finalizar y guardar"</b>.'
+}
+
+function detenerGPS() {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId)
+  if (timerId !== null) clearInterval(timerId)
+  watchId = null
+  timerId = null
+  document.getElementById('chip-viva').classList.remove('activo')
+}
+
+function cancelarRecorrido() {
+  detenerGPS()
+  puntos = []
+  linea.setLatLngs([])
+  if (marcadorActual) { mapa.removeLayer(marcadorActual); marcadorActual = null }
+  document.getElementById('btn-iniciar').style.display = 'flex'
+  document.getElementById('btn-guardar').style.display = 'none'
+  document.getElementById('btn-cancelar').style.display = 'none'
+  document.getElementById('s-puntos').textContent = '0'
+  document.getElementById('s-distancia').textContent = '0 m'
+  document.getElementById('s-tiempo').textContent = '00:00'
+  document.getElementById('aviso-txt').innerHTML = 'Toque <b>"Iniciar recorrido"</b> y camine despacio todo el contorno del territorio, sin atajos. La app va marcando su camino en el mapa. Al terminar de rodear todo el lindero, toque <b>"Finalizar y guardar"</b>.'
+}
+
+document.getElementById('btn-iniciar').addEventListener('click', iniciarRecorrido)
+document.getElementById('btn-cancelar').addEventListener('click', cancelarRecorrido)
+
+/* ---------- Estado de conexión ---------- */
+function setEstado(enLinea) {
+  const el = document.getElementById('estado')
+  el.className = enLinea ? 'on' : 'off'
+  document.getElementById('estado-txt').textContent = enLinea ? 'En línea' : 'Sin conexión'
+}
+setEstado(navigator.onLine)
+window.addEventListener('online', () => { setEstado(true); intentarEnviarPendiente() })
+window.addEventListener('offline', () => setEstado(false))
+
+/* ---------- Envío (con cola local si no hay internet) ---------- */
+function mostrarMsg(tipo, icono, texto) {
+  const m = document.getElementById('msg')
+  m.className = tipo
+  m.innerHTML = `<span class="ic">${icono}</span><span>${texto}</span>`
+}
+
+async function enviar(payload) {
+  const res = await fetch(EP, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(15000)
+  })
+  if (!res.ok) throw new Error('respuesta no OK')
+  return res.json()
+}
+
+async function intentarEnviarPendiente() {
+  const raw = localStorage.getItem(LS_KEY)
+  if (!raw) return
+  try {
+    await enviar(JSON.parse(raw))
+    localStorage.removeItem(LS_KEY)
+    mostrarMsg('ok', '✅', 'Enviado. Ya puede cerrar esta ventana y continuar en WhatsApp.')
+  } catch {
+    // sigue offline, se reintenta más tarde
+  }
+}
+
+document.getElementById('btn-guardar').addEventListener('click', async () => {
+  if (puntos.length < 3) return
+  detenerGPS()
+
+  // Cerrar el polígono: el primer y último punto deben coincidir
+  const anillo = [...puntos.map(p => ({ lat: p.lat, lng: p.lng }))]
+  if (anillo[0].lat !== anillo[anillo.length - 1].lat || anillo[0].lng !== anillo[anillo.length - 1].lng) {
+    anillo.push(anillo[0])
+  }
+  const areaHa = areaGeodesica(anillo.slice(0, -1)) / 10000
+
+  const geojson = {
+    type: 'Polygon',
+    coordinates: [anillo.map(p => [p.lng, p.lat])]
+  }
+
+  const payload = {
+    token: TOKEN,
+    metodo: 'recorrido_gps',
+    geojson,
+    puntos_gps: puntos,
+    area_ha: Number(areaHa.toFixed(4)),
+    vertices: anillo.length - 1
+  }
+
+  const btn = document.getElementById('btn-guardar')
+  btn.disabled = true
+  btn.classList.add('cargando')
+
+  try {
+    await enviar(payload)
+    mostrarMsg('ok', '✅', '¡Recorrido enviado correctamente! Ya puede cerrar esta ventana y continuar la conversación en WhatsApp.')
+  } catch {
+    localStorage.setItem(LS_KEY, JSON.stringify(payload))
+    mostrarMsg('pend', '📦', 'Sin conexión: el recorrido quedó guardado en este teléfono y se enviará solo apenas recupere señal. Puede cerrar esta ventana con tranquilidad.')
+  } finally {
+    btn.disabled = false
+    btn.classList.remove('cargando')
+  }
+})
+
+window.addEventListener('load', () => {
+  if (navigator.onLine) intentarEnviarPendiente()
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw-perimetro.js').catch(() => {})
+  }
+})
+</script>
+</body>
+</html>

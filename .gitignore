@@ -1,0 +1,27 @@
+dist/*
+node_modules
+.env
+.pnpm-store
+*_sessions
+*tokens
+.wwebjs*
+
+*.log
+*qr.png
+# Datos sensibles y archivos locales (comunidades, sesiones, respaldos)
+.env
+.env.*
+!.env.example
+bot_sessions/
+audios/
+fotos/
+data/
+Preguntas/
+Claude outputs/
+*.dump
+*.log
+*.qr.png
+bot.qr.png
+dist/
+node_modules/
+~$*

@@ -1,0 +1,35 @@
+# ══════════════════════════════════════════════════════════════════
+#  Configuración del túnel FIJO de Cloudflare
+#
+#  Copia este archivo a:   C:\Users\<TU_USUARIO>\.cloudflared\config.yml
+#  y reemplaza NOMBRE-DEL-TUNEL, EL-ID y TU-DOMINIO por los tuyos.
+#
+#  Con esto, un solo túnel publica las DOS cosas con nombres distintos:
+#     bot.TU-DOMINIO    → el chatbot        (puerto 3008)
+#     visor.TU-DOMINIO  → el visor / SIG    (puerto 3009)
+#
+#  La ganancia grande: estas direcciones NO cambian nunca, ni cuando
+#  reinicias el computador. Se acabó tener que actualizar el webhook en
+#  Meta cada vez, y el enlace del croquis que le llega a la gente por
+#  WhatsApp queda estable.
+# ══════════════════════════════════════════════════════════════════
+
+tunnel: NOMBRE-DEL-TUNEL
+credentials-file: C:\Users\TU_USUARIO\.cloudflared\EL-ID-DEL-TUNEL.json
+
+ingress:
+  # ── El chatbot: webhook de WhatsApp y páginas de croquis/recorrido ──
+  - hostname: bot.TU-DOMINIO
+    service: http://localhost:3008
+
+  # ── El visor geográfico (dashboard) ──
+  - hostname: visor.TU-DOMINIO
+    service: http://localhost:3009
+    originRequest:
+      # El visor usa WebSocket para los avisos en vivo; sin este tiempo
+      # de espera largo, Cloudflare cortaría la conexión cada minuto.
+      noTLSVerify: true
+      connectTimeout: 30s
+
+  # Regla final obligatoria: todo lo demás se rechaza.
+  - service: http_status:404

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Modelo de datos LADM-COL — Registro Territorial Comunitario</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.css"/>
+<style>
+:root{
+  --linea:#333; --fondo:#fbfbfb; --panel:#fff; --borde:#d4d4d4; --texto-2:#555;
+  /* Colores del perfil LADM-COL, tomados del modelo de referencia */
+  --c-interesado:#8ef58e;   /* verde  — COL_Interesado y sus subclases      */
+  --c-uab:#ffff8c;          /* amarillo — unidades administrativas y DRR    */
+  --c-fuente:#c9c9c9;       /* gris   — fuentes administrativas y espaciales*/
+  --c-espacial:#7fc9f5;     /* azul   — COL_UnidadEspacial                  */
+  --c-terreno:#7ff0f0;      /* cian   — TPC_Terreno                         */
+  --c-ext:#e0c9f5;          /* lila   — extensiones propias de esta tesis   */
+  --c-enum:#f2f2f2;         /* enumeraciones                                */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:Arial,Helvetica,sans-serif;background:var(--fondo);color:#111;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+button{font:inherit;font-size:.75rem;padding:6px 11px;border:1px solid var(--borde);
+  background:#fff;border-radius:5px;cursor:pointer}
+button:hover{background:#f0f0f0}
+button.activo{background:#111;color:#fff;border-color:#111}
+
+#barra{
+  background:var(--panel);border-bottom:1px solid var(--borde);padding:9px 14px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;z-index:10;
+}
+#barra h1{font-size:.9rem;font-weight:700}
+#barra h1 span{display:block;font-size:.68rem;font-weight:400;color:var(--texto-2)}
+#leyenda{display:flex;gap:12px;align-items:center;font-size:.7rem;color:var(--texto-2);flex-wrap:wrap}
+#leyenda .e{display:flex;align-items:center;gap:5px}
+#leyenda i{width:13px;height:13px;border:1px solid #666;display:inline-block;flex-shrink:0}
+.herramientas{display:flex;gap:6px;margin-left:auto}
+
+#lienzo{flex:1;position:relative;background:var(--fondo)}
+#dibujo{width:100%;height:100%}
+
+/* Drawflow: se le quita su caja para dejar sólo las clases UML */
+.drawflow .drawflow-node{background:transparent;border:none;box-shadow:none;padding:0;width:auto;border-radius:0}
+.drawflow .drawflow-node.selected{background:transparent;box-shadow:none}
+.drawflow .drawflow-node .drawflow_content_node{width:100%;height:100%}
+.drawflow .drawflow-node .input,
+.drawflow .drawflow-node .output{
+  width:1px;height:1px;background:transparent;border:none;box-shadow:none;margin:0;position:absolute;top:50%;
+}
+.drawflow .drawflow-node .inputs{position:absolute;left:0;top:0;height:100%}
+.drawflow .drawflow-node .outputs{position:absolute;right:0;top:0;height:100%}
+.drawflow .connection .main-path{stroke:var(--linea);stroke-width:1.3px;fill:none}
+.drawflow .connection .point{display:none}
+/* La herencia se dibuja con el triángulo hueco de UML, apuntando a la
+   clase padre (la conexión va del hijo hacia el padre). */
+.drawflow .connection.herencia .main-path{marker-end:url(#triangulo)}
+
+/* ─────────── Clase UML ─────────── */
+.clase{
+  border:1.3px solid #333;background:#fff;font-size:.68rem;overflow:hidden;
+  display:flex;flex-direction:column;height:100%;
+}
+.clase .cab{padding:4px 7px 5px;border-bottom:1.3px solid #333;text-align:center;line-height:1.25}
+.clase .estereo{display:block;font-size:.62rem;color:#333}
+.clase .nom{font-weight:700;font-size:.72rem}
+.clase.abstracta .nom{font-style:italic}
+.clase .tabla{
+  display:block;font-family:monospace;font-size:.6rem;color:#1a5c2e;margin-top:2px;
+}
+.clase .tabla.sin{color:#8a6d00;font-style:italic;font-family:Arial,sans-serif}
+.clase .attrs{padding:4px 7px;line-height:1.45;flex:1}
+.clase .attrs div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clase .attrs .geo{color:#0d4f8b;font-weight:700}
+
+.enum .cab{background:var(--c-enum)}
+.enum .attrs{font-size:.65rem}
+
+.nota{
+  background:#fffbe6;border:1px dashed #b8a55a;padding:7px 9px;font-size:.66rem;
+  line-height:1.4;height:100%;
+}
+
+#aviso{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:var(--fondo);text-align:center;padding:30px;font-size:.85rem;color:var(--texto-2)}
+#aviso.visible{display:flex}
+</style>
+</head>
+<body>
+
+<!-- El triángulo de herencia de UML, referenciado por las conexiones -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <marker id="triangulo" viewBox="0 0 12 12" refX="11" refY="6"
+            markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+      <path d="M 0 0 L 11 6 L 0 12 z" fill="#fff" stroke="#333" stroke-width="1.2"/>
+    </marker>
+  </defs>
+</svg>
+
+<div id="barra">
+  <h1>Modelo de datos — perfil LADM-COL
+    <span>Registro Territorial Comunitario · ISO 19152 · PostgreSQL + PostGIS</span></h1>
+
+  <div id="leyenda">
+    <span class="e"><i style="background:var(--c-interesado)"></i>Interesados</span>
+    <span class="e"><i style="background:var(--c-uab)"></i>Unidad administrativa / DRR</span>
+    <span class="e"><i style="background:var(--c-fuente)"></i>Fuentes</span>
+    <span class="e"><i style="background:var(--c-espacial)"></i>Unidad espacial</span>
+    <span class="e"><i style="background:var(--c-terreno)"></i>Terreno</span>
+    <span class="e"><i style="background:var(--c-ext)"></i>Extensión de esta tesis</span>
+    <span class="e"><i style="border-style:dashed"></i><i>▷</i> herencia</span>
+  </div>
+
+  <div class="herramientas">
+    <button id="btn-mover" class="activo">✋ Mover</button>
+    <button id="btn-menos">−</button>
+    <button id="btn-reset">100%</button>
+    <button id="btn-mas">+</button>
+    <button id="btn-imprimir">🖨️ PDF</button>
+  </div>
+</div>
+
+<div id="lienzo">
+  <div id="dibujo"></div>
+  <div id="aviso">⚠️ No se pudo cargar la librería Drawflow desde internet.<br>Revise la conexión y recargue.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   MODELO DE DATOS — PERFIL LADM-COL
+   Registro Territorial Comunitario (ISO 19152)
+
+   Muestra únicamente las clases que están efectivamente implementadas
+   como tablas en la base de datos, con la nomenclatura y la herencia
+   del modelo LADM-COL en el que se basa el proyecto.
+
+   Las clases COL_* en cursiva son abstractas: no tienen tabla propia,
+   sus atributos quedan materializados en la tabla de la clase hija
+   (mapeo relacional habitual de una jerarquía de herencia).
+
+   Las clases EXT_* en lila son extensiones propias de esta tesis:
+   registran el proceso de captura conversacional (historia narrada,
+   validación comunitaria, respuestas habladas, fotografías y captura
+   del perímetro), que el estándar no contempla.
+   ══════════════════════════════════════════════════════════════════ */
+
+if (typeof Drawflow === 'undefined') {
+  document.getElementById('aviso').classList.add('visible')
+} else {
+  arrancar()
+}
+
+function arrancar() {
+
+const editor = new Drawflow(document.getElementById('dibujo'))
+editor.reroute = false
+editor.curvature = 0
+editor.zoom_min = 0.15
+editor.zoom_max = 1.8
+editor.start()
+
+const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]))
+
+/* Alto de una clase: cabecera + una línea por atributo. */
+const ANCHO = 306
+// Alto real medido: cabecera (estereotipo + nombre + tabla) 50 px, o 40 px
+// si no lleva línea de tabla; cada atributo ocupa 16 px, más el relleno.
+const altoClase = (attrs, conTabla) => (conTabla ? 50 : 40) + attrs.length * 16 + 10
+
+const htmlClase = ({ nombre, estereotipo, tabla, attrs = [], color, abstracta }) => `
+  <div class="clase ${abstracta ? 'abstracta' : ''}" style="background:${color}"
+       data-w="${ANCHO}" data-h="${altoClase(attrs, !!tabla || !!abstracta)}">
+    <div class="cab">
+      ${estereotipo ? `<span class="estereo">&laquo;${esc(estereotipo)}&raquo;</span>` : ''}
+      <span class="nom">${esc(nombre)}</span>
+      ${tabla ? `<span class="tabla">${esc(tabla)}</span>`
+              : abstracta ? '<span class="tabla sin">clase abstracta · sin tabla propia</span>' : ''}
+    </div>
+    <div class="attrs">
+      ${attrs.map((a) => `<div class="${/GM_|geom/.test(a) ? 'geo' : ''}">${esc(a)}</div>`).join('')}
+    </div>
+  </div>`
+
+// El ancho se ajusta al valor más largo: varias enumeraciones del perfil
+// tienen nombres extensos (Ampliacion_Saneamiento_ResguardosIndigenas)
+// que si no se recortarían con puntos suspensivos.
+const anchoEnum = (nombre, valores) => {
+  const largo = Math.max(nombre.length, ...valores.map((v) => v.length))
+  return Math.max(238, Math.min(370, 24 + largo * 5.9))
+}
+
+const htmlEnum = (nombre, valores) => `
+  <div class="clase enum" data-w="${Math.round(anchoEnum(nombre, valores))}" data-h="${40 + valores.length * 15 + 10}">
+    <div class="cab"><span class="estereo">&laquo;enumeration&raquo;</span>
+      <span class="nom">${esc(nombre)}</span></div>
+    <div class="attrs">${valores.map((v) => `<div>${esc(v)}</div>`).join('')}</div>
+  </div>`
+
+const htmlNota = (texto, w, h) =>
+  `<div class="nota" data-w="${w}" data-h="${h}">${texto}</div>`
+
+const N = {}   // registro de nodos por clave, para conectarlos después
+
+const clase = (clave, x, y, def) => {
+  N[clave] = editor.addNode(clave, 3, 3, x, y, 'clase-nodo', {}, htmlClase(def), false)
+  return N[clave]
+}
+/** Herencia: la flecha termina en el padre, con triángulo hueco. */
+const hereda = (hijo, padre, sOut = 1, sIn = 1) =>
+  editor.addConnection(N[hijo], N[padre], 'output_' + sOut, 'input_' + sIn)
+/** Asociación simple entre clases. */
+const asocia = (a, b, sOut = 2, sIn = 2) =>
+  editor.addConnection(N[a], N[b], 'output_' + sOut, 'input_' + sIn)
+
+/* ══════════ 1. INTERESADOS ══════════ */
+clase('tpc_interesado_comunidad', 60, 60, {
+  nombre: 'TPC_InteresadoComunidad', estereotipo: 'COL_Interesado',
+  tabla: 'tpc_interesado_comunidad', color: 'var(--c-interesado)',
+  attrs: [
+    'Nombre_Comunidad[1] : Cadena de texto',
+    'Tipo_Comunidad[1] : TPC_ComunidadTipo',
+    'OrganizacionFilial[0..1] : TPC_OrganizacionTipo',
+    'Pueblo[0..1] : Cadena de texto',
+    'Numero_Familias[0..1] : Numérico',
+    'Numero_Personas[0..1] : Numérico',
+    'Numero_Mujeres[0..1] : Numérico',
+    'Numero_Hombres[0..1] : Numérico',
+    'Consentimiento[1] : Booleano',
+    'Fecha_Registro[1] : XMLDate',
+  ],
+})
+
+clase('tpc_representante', 60, 310, {
+  nombre: 'TPC_RepresentanteLegal_CC', estereotipo: 'COL_Interesado',
+  tabla: 'tpc_representante_legal', color: 'var(--c-interesado)',
+  attrs: [
+    'Nombres_Autoridades[1] : Cadena de texto',
+    'Cargo[1] : TPC_CargoTipo',
+    'Legitimidad[0..1] : TPC_LegitimidadTipo',
+    'Documento_Identidad[0..1] : Cadena de texto',
+    'Telefono[0..1] : Cadena de texto',
+  ],
+})
+
+clase('col_interesado', 470, 175, {
+  nombre: 'COL_Interesado', estereotipo: 'ObjetoVersionado',
+  color: 'var(--c-interesado)', abstracta: true,
+  attrs: ['Nombre[0..1] : CharacterString'],
+})
+
+hereda('tpc_interesado_comunidad', 'col_interesado')
+hereda('tpc_representante', 'col_interesado', 1, 2)
+
+/* ══════════ 2. DERECHOS Y RESTRICCIONES (DRR) ══════════ */
+clase('tpc_derecho', 60, 500, {
+  nombre: 'TPC_Derecho', estereotipo: 'COL_DRR',
+  tabla: 'tpc_derecho', color: 'var(--c-uab)',
+  attrs: ['Tipo[1] : TPC_DerechoTipo'],
+})
+
+clase('tpc_restriccion', 60, 610, {
+  nombre: 'TPC_Restriccion', estereotipo: 'COL_DRR',
+  tabla: 'tpc_restriccion', color: 'var(--c-uab)',
+  attrs: ['Tipo[1] : TPC_RestriccionTipo'],
+})
+
+clase('col_drr', 470, 540, {
+  nombre: 'COL_DRR', estereotipo: 'ObjetoVersionado',
+  color: 'var(--c-uab)', abstracta: true,
+  attrs: ['Descripcion[0..1] : CharacterString'],
+})
+
+hereda('tpc_derecho', 'col_drr')
+hereda('tpc_restriccion', 'col_drr', 1, 2)
+
+/* ══════════ 3. UNIDADES ADMINISTRATIVAS BÁSICAS ══════════ */
+clase('tpc_predio', 60, 760, {
+  nombre: 'TPC_Predio', estereotipo: 'COL_UnidadAdministrativaBasica',
+  tabla: 'tpc_predio', color: 'var(--c-uab)',
+  attrs: [
+    'Departamento[1] : Cadena de texto',
+    'Municipio[1] : Cadena de texto',
+    'Vereda[0..1] : Cadena de texto',
+    'Corregimiento[0..1] : Cadena de texto',
+    'Nombre_Predio[0..1] : Cadena de texto',
+    'Numero_Predial[0..1] : Cadena de texto',
+    'Area_ActoAdministrativo[0..1] : Numérico',
+    'Reconocimiento_Estado[0..1] : TPC_ReconocimientoTipo',
+    'Limites_Territorio[0..1] : TPC_LimiteTipo',
+    'Zonas_Especiales[0..1] : Booleano',
+  ],
+})
+
+clase('tpc_territorio', 60, 1010, {
+  nombre: 'TPC_TerritorioPropiedadColectiva', estereotipo: 'COL_UnidadAdministrativaBasica',
+  tabla: 'tpc_territorio_propiedad_colectiva', color: 'var(--c-uab)',
+  attrs: [
+    'Nombre[1] : CharacterString',
+    'Tipo_Procedimiento[1] : TPC_ProcedimientoTipo',
+  ],
+})
+
+clase('col_uab', 470, 850, {
+  nombre: 'COL_UnidadAdministrativaBasica', estereotipo: 'ObjetoVersionado',
+  color: 'var(--c-uab)', abstracta: true,
+  attrs: [
+    'Nombre[0..1] : CharacterString',
+    'Tipo[1] : COL_UnidadAdministrativaBasicaTipo',
+  ],
+})
+
+hereda('tpc_predio', 'col_uab')
+hereda('tpc_territorio', 'col_uab', 1, 2)
+
+// El núcleo de LADM: interesado — derecho — unidad administrativa
+asocia('col_interesado', 'col_drr')
+asocia('col_drr', 'col_uab')
+
+/* ══════════ 4. FUENTES ══════════ */
+clase('tpc_fuente_adm', 60, 1180, {
+  nombre: 'TPC_FuenteAdministrativa', estereotipo: 'COL_FuenteAdministrativa',
+  tabla: 'tpc_fuente_administrativa', color: 'var(--c-fuente)',
+  attrs: [
+    'Tipo[1] : TPC_FuenteAdministrativaTipo',
+    'Tipo_ActoAdministrativo[1] : TPC_ActoAdministrativoTipo',
+    'Numero_Fuente[0..1] : Cadena de texto',
+    'Fecha_Documento_Fuente[0..1] : XMLDate',
+    'Observaciones[0..1] : Cadena de texto',
+  ],
+})
+
+clase('tpc_fuente_esp', 60, 1360, {
+  nombre: 'TPC_FuenteEspacial', estereotipo: 'COL_FuenteEspacial',
+  tabla: 'tpc_fuente_espacial', color: 'var(--c-fuente)',
+  attrs: [
+    'Tipo[1] : TPC_FuenteEspacialTipo',
+    'NumeroPlano[0..1] : Cadena de texto',
+    'Observaciones_Plano[0..1] : Cadena de texto',
+  ],
+})
+
+clase('col_fuente_adm', 470, 1190, {
+  nombre: 'COL_FuenteAdministrativa', estereotipo: 'COL_Fuente',
+  color: 'var(--c-fuente)', abstracta: true,
+  attrs: ['Tipo[1] : COL_FuenteAdministrativaTipo'],
+})
+
+clase('col_fuente_esp', 470, 1370, {
+  nombre: 'COL_FuenteEspacial', estereotipo: 'COL_Fuente',
+  color: 'var(--c-fuente)', abstracta: true,
+  attrs: ['Tipo[1] : COL_FuenteEspacialTipo'],
+})
+
+clase('col_fuente', 880, 1265, {
+  nombre: 'COL_Fuente', estereotipo: 'Oid',
+  color: 'var(--c-fuente)', abstracta: true,
+  attrs: [
+    'Estado_Disponibilidad[1] : COL_EstadoDisponibilidadTipo',
+    'Fecha_Documento_Fuente[0..1] : XMLDate',
+  ],
+})
+
+hereda('tpc_fuente_adm', 'col_fuente_adm')
+hereda('tpc_fuente_esp', 'col_fuente_esp')
+hereda('col_fuente_adm', 'col_fuente')
+hereda('col_fuente_esp', 'col_fuente', 1, 2)
+asocia('col_fuente', 'col_uab', 2, 3)
+
+/* ══════════ 5. UNIDAD ESPACIAL ══════════ */
+clase('tpc_terreno', 880, 760, {
+  nombre: 'TPC_Terreno', estereotipo: 'COL_UnidadEspacial',
+  tabla: 'tpc_predio  (columnas geométricas)', color: 'var(--c-terreno)',
+  attrs: [
+    'Area_Terreno[1] : Numérico',
+    'Geometria[1] : GM_MultiSurface3D   → geom_perimetro',
+    'Punto_Referencia[0..1] : GM_Point3D   → geom',
+    'Metodo_Produccion[1] : COL_MetodoProduccionTipo',
+  ],
+})
+
+clase('col_unidad_espacial', 1290, 770, {
+  nombre: 'COL_UnidadEspacial', estereotipo: 'ObjetoVersionado',
+  color: 'var(--c-espacial)', abstracta: true,
+  attrs: [
+    'Area[0..1] : COL_AreaValor',
+    'Dimension[0..1] : COL_DimensionTipo',
+    'Etiqueta[0..1] : CharacterString',
+    'Geometria[0..1] : GM_MultiSurface3D',
+  ],
+})
+
+hereda('tpc_terreno', 'col_unidad_espacial')
+asocia('col_uab', 'col_unidad_espacial', 3, 2)
+
+editor.addNode('nota_geo', 0, 0, 1290, 960, 'nota-nodo', {},
+  htmlNota(
+    '<b>Implementación en PostGIS.</b><br>' +
+    'TPC_Terreno no es una tabla aparte: sus dos geometrías viven en ' +
+    '<code>tpc_predio</code> como <code>geom</code> (POINT, 4326) y ' +
+    '<code>geom_perimetro</code> (POLYGON, 4326). El área se calcula sobre ' +
+    'el elipsoide con <code>ST_Area(::geography)</code>, no se almacena.',
+    306, 118), false)
+
+/* ══════════ 6. EXTENSIONES PROPIAS DE LA TESIS ══════════ */
+const EXTENSIONES = [
+  ['ext_historia', 'EXT_HistoriaTerritorio', 'ext_historia_territorio', [
+    'Antiguedad_Territorio[1] : EXT_AntiguedadTipo',
+    'Descripcion_Historia[0..1] : Cadena de texto',
+    'Audio_Url[0..1] : Cadena de texto',
+  ]],
+  ['ext_uso', 'EXT_UsoTerritorio', 'ext_uso_territorio', [
+    'Tipo_Uso[1] : EXT_UsoTipo',
+    'Reglas_Internas[0..1] : Booleano',
+  ]],
+  ['ext_validacion', 'EXT_ValidacionComunitaria', 'ext_validacion_comunitaria', [
+    'Validado_Por_Comunidad[1] : EXT_ValidacionTipo',
+    'Observaciones_Finales[0..1] : Cadena de texto',
+    'Fecha_Validacion[1] : XMLDate',
+  ]],
+  ['ext_transcripcion', 'EXT_TranscripcionRespuesta', 'ext_transcripcion_respuesta', [
+    'Pregunta_Clave[1] : Cadena de texto',
+    'Transcripcion[1] : Cadena de texto',
+    'Valor_Interpretado[0..1] : Cadena de texto',
+    'Fecha[1] : XMLDate',
+  ]],
+  ['ext_foto', 'EXT_FotoRegistro', 'ext_foto_registro', [
+    'Categoria[1] : EXT_CategoriaFotoTipo',
+    'Ruta_Archivo[1] : Cadena de texto',
+    'Descripcion[0..1] : Cadena de texto',
+    'Fecha[1] : XMLDate',
+  ]],
+  ['ext_captura', 'EXT_CapturaPerimetro', 'tpc_captura_perimetro_pendiente', [
+    'Token[1] : Cadena de texto',
+    'Metodo[1] : COL_MetodoProduccionTipo',
+    'Geojson[1] : Cadena de texto',
+    'Puntos_Gps[0..1] : Cadena de texto',
+    'Area_Ha[0..1] : Numérico',
+    'Usado[1] : Booleano',
+  ]],
+]
+
+const X_EXT = 1700
+let yExt = 60
+EXTENSIONES.forEach(([clave, nombre, tabla, attrs]) => {
+  clase(clave, X_EXT, yExt, {
+    nombre, estereotipo: 'extensión de la tesis', tabla,
+    color: 'var(--c-ext)', attrs,
+  })
+  yExt += altoClase(attrs, true) + 34
+})
+
+// De qué cuelga cada extensión dentro del modelo
+asocia('col_interesado', 'ext_historia', 3, 1)
+asocia('col_interesado', 'ext_validacion', 3, 1)
+asocia('col_interesado', 'ext_transcripcion', 3, 1)
+asocia('col_interesado', 'ext_foto', 3, 1)
+asocia('col_uab', 'ext_uso', 3, 1)
+asocia('col_uab', 'ext_foto', 3, 1)
+asocia('tpc_terreno', 'ext_captura', 2, 1)
+
+editor.addNode('nota_ext', 0, 0, X_EXT, yExt + 10, 'nota-nodo', {},
+  htmlNota(
+    '<b>Aporte de esta tesis al perfil.</b><br>' +
+    'LADM-COL modela el resultado del levantamiento, pero no el ' +
+    '<i>proceso</i> de captura. Estas seis clases registran cómo se ' +
+    'obtuvo el dato: la historia narrada por la comunidad, su validación ' +
+    'en asamblea, las respuestas dadas de viva voz con su transcripción, ' +
+    'las fotografías de respaldo y el perímetro levantado en campo.',
+    306, 132), false)
+
+/* ══════════ 7. ENUMERACIONES ══════════ */
+const ENUMS = [
+  ['TPC_ComunidadTipo', ['Comunidad_Negra','Cabildo','Parcialidad','Resguardo_Indigena','Territorio_Colectivo']],
+  ['TPC_OrganizacionTipo', ['Cabildo','Autoridades_Tradicionales','Asamblea_Comunitaria','Consejo_Comunitario','Otro']],
+  ['TPC_CargoTipo', ['Gobernador','Capitan','Cacique','Autoridad_Tradicional','Representante_Legal_CC','Otro']],
+  ['TPC_ProcedimientoTipo', ['Ampliacion_ResguardosIndigenas','Ampliacion_Saneamiento_ResguardosIndigenas','Reestructuracion_ResguardosIndigenas','Conversion_Reservas_Resguardos','Titulacion_Comunidades_Negras','En_Proceso']],
+  ['TPC_DerechoTipo', ['Propiedad_Colectiva','Posesion_Ancestral','Uso_Usufructo','En_Proceso','Desconocido']],
+  ['TPC_RestriccionTipo', ['Minera','Oleoducto_Gasoducto','Energia_Electrica','Acueducto_Alcantarillado','Legal_Hidrocarburos','Ninguna']],
+  ['TPC_LimiteTipo', ['Rios','Montanas','Caminos','Hitos_Naturales','Documentos_Oficiales','Combinacion']],
+  ['TPC_ActoAdministrativoTipo', ['Resolucion','Acuerdo','Folio_Matricula','Sin_Documento']],
+  ['TPC_FuenteEspacialTipo', ['Plano_Oficial','Mapa_Comunitario','Sin_Mapa']],
+  ['TPC_ReconocimientoTipo', ['Sí','No','No_Sabemos']],
+  ['COL_MetodoProduccionTipo', ['Metodo_Directo  → recorrido_gps','Metodo_Declarativo_y_Colaborativo  → croquis_manual','(sin capturar)']],
+  ['EXT_UsoTipo', ['Uso_Colectivo','Uso_Tradicional','Zonas_Compartidas','Uso_Mixto']],
+  ['EXT_ValidacionTipo', ['Validada_Asamblea','Revisada_Autoridades','Pendiente']],
+  ['EXT_AntiguedadTipo', ['Desde_Siempre','Desde_Hace_Muchos_Anos','Desde_Fecha_Aproximada','Desconocida']],
+  ['EXT_CategoriaFotoTipo', ['documento_legal','plano_mapa','limites_territorio','zonas_especiales','restriccion','territorio','comunidad_reunida']],
+]
+
+const Y_ENUM = 1700
+const SEP_ENUM = 26
+let xEnum = 60, yEnumFila = Y_ENUM, altoFila = 0
+ENUMS.forEach(([nombre, valores]) => {
+  const w = Math.round(anchoEnum(nombre, valores))
+  const h = 40 + valores.length * 15 + 10
+  if (xEnum + w > 2160) {                   // salto de fila
+    xEnum = 60
+    yEnumFila += altoFila + SEP_ENUM
+    altoFila = 0
+  }
+  editor.addNode('enum_' + nombre, 0, 0, xEnum, yEnumFila, 'enum-nodo', {}, htmlEnum(nombre, valores), false)
+  xEnum += w + SEP_ENUM
+  altoFila = Math.max(altoFila, h)
+})
+
+/* ══════════ Marcar las conexiones de herencia ══════════ */
+// Drawflow no distingue tipos de conexión: se marcan las de herencia por
+// las clases involucradas, para que reciban el triángulo de UML.
+const PARES_HERENCIA = [
+  ['tpc_interesado_comunidad','col_interesado'], ['tpc_representante','col_interesado'],
+  ['tpc_derecho','col_drr'], ['tpc_restriccion','col_drr'],
+  ['tpc_predio','col_uab'], ['tpc_territorio','col_uab'],
+  ['tpc_fuente_adm','col_fuente_adm'], ['tpc_fuente_esp','col_fuente_esp'],
+  ['col_fuente_adm','col_fuente'], ['col_fuente_esp','col_fuente'],
+  ['tpc_terreno','col_unidad_espacial'],
+]
+setTimeout(() => {
+  PARES_HERENCIA.forEach(([hijo, padre]) => {
+    document
+      .querySelectorAll(`.connection.node_in_node-${N[padre]}.node_out_node-${N[hijo]}`)
+      .forEach((c) => c.classList.add('herencia'))
+  })
+}, 60)
+
+/* ══════════ Controles ══════════ */
+document.getElementById('btn-mas').onclick   = () => editor.zoom_in()
+document.getElementById('btn-menos').onclick = () => editor.zoom_out()
+document.getElementById('btn-reset').onclick = () => editor.zoom_reset()
+document.getElementById('btn-imprimir').onclick = () => window.print()
+
+const btnMover = document.getElementById('btn-mover')
+btnMover.onclick = () => {
+  const fijo = editor.editor_mode === 'fixed'
+  editor.editor_mode = fijo ? 'edit' : 'fixed'
+  btnMover.classList.toggle('activo', fijo)
+  btnMover.textContent = fijo ? '✋ Mover' : '🔒 Fijo'
+}
+
+editor.zoom = 0.5
+editor.zoom_refresh()
+
+}
+</script>
+</body>
+</html>
